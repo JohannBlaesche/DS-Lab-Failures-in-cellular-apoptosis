@@ -1,6 +1,25 @@
 # Task 1 - Earthquake Damage Prediction
 
+## Development Guide
 
+Setup a virtual environment and install the required packages using the following commands:
+
+```shell
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Then install the package with
+
+```shell
+pip install -e '.[dev]'
+```
+
+and the precommit hooks with
+
+```shell
+pre-commit install
+```
 
 ## Getting started
 
@@ -42,11 +61,6 @@ Use the built-in continuous integration in GitLab.
 - [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
 - [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
 
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
 
 ## Suggestions for a good README
 
