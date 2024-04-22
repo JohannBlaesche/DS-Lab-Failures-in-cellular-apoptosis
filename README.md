@@ -1,5 +1,18 @@
 # Task 1 - Earthquake Damage Prediction
 
+
+## Quickstart
+
+First, clone the repository and activate a virtual environment of your choice. Then install the required packages using the following command:
+
+```shell
+pip install .
+```
+and run the pipeline with
+
+```shell
+python
+
 ## Development Guide
 
 Setup a virtual environment and install the required packages using the following commands:
@@ -18,7 +31,7 @@ python -m venv .venv
 ./.venv/Scripts/activate
 ```
 
-hen install the package with
+Then install the package with
 
 ```shell
 pip install -e '.[dev]'

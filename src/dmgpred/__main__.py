@@ -10,10 +10,10 @@ from dmgpred.train import train
 
 def main():
     """Run Prediction Pipeline."""
-    test_values = pd.read_csv("../data/test_values.csv")
-    train_values = pd.read_csv("../data/train_values.csv")
-    train_labels = pd.read_csv("../data/train_labels.csv")
-    sample_submission = pd.read_csv("../data/submission_format.csv")
+    test_values = pd.read_csv("./data/test_values.csv")
+    train_values = pd.read_csv("./data/train_values.csv")
+    train_labels = pd.read_csv("./data/train_labels.csv")
+    sample_submission = pd.read_csv("./data/submission_format.csv")
 
     X_train, y_train, X_test = clean(train_values, train_labels, test_values)
     X_train, X_test = featurize(X_train, X_test)
