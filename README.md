@@ -8,10 +8,12 @@ First, clone the repository and activate a virtual environment of your choice. T
 ```shell
 pip install .
 ```
+
 and run the pipeline with
 
 ```shell
-python
+dmgpred
+```
 
 ## Development Guide
 
