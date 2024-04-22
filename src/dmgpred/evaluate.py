@@ -3,6 +3,7 @@
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.metrics import matthews_corrcoef
+from sklearn.model_selection import train_test_split
 
 
 def evaluate(model: BaseEstimator, X: pd.DataFrame, y: pd.Series) -> float:
@@ -24,6 +25,8 @@ def evaluate(model: BaseEstimator, X: pd.DataFrame, y: pd.Series) -> float:
     """
     # implement evaluation here, e.g. 5-fold Cross validation
     # for now, only a simple train-test split
-    y_pred = model.predict(X)
-    mcc = matthews_corrcoef(y, y_pred)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    mcc = matthews_corrcoef(y_test, y_pred)
     return mcc

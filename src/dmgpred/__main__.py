@@ -30,14 +30,15 @@ def main():
 
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
+
     model = train(X_train, y_train)
+    y_pred = model.predict(X_test)
 
     # TODO: implement evaluation with custom metrics
     # e.g. with command-line arguments, or later with Hydra
     score = evaluate(model, X_train, y_train)
     print(f"Matthews Correlation Coefficient: {score: .4f}")
 
-    y_pred = model.predict(X_test)
     submission = pd.DataFrame(
         {"building_id": X_test["building_id"], "damage_grade": y_pred}
     )
