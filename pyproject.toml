@@ -1,5 +1,5 @@
 [project]
-name = "Task-1-earthquake-damage-prediction"
+name = "earthquake-damage-prediction"
 dynamic = ['version']
 description = "Earthquake damage prediction task 1"
 authors = [
