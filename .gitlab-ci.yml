@@ -26,6 +26,6 @@ before_script:
 lint_and_test:
   script:
     - pip install --editable ".[dev]"
-    - ruff check
-    - ruff format --check
+    - ruff check --output-format=gitlab
+    - ruff format --check .
     - pytest
