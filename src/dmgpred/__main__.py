@@ -1,5 +1,7 @@
 """Main Script of the pipeline."""
 
+import time
+
 import pandas as pd
 
 from dmgpred.cleaning import clean
@@ -7,24 +9,34 @@ from dmgpred.evaluate import evaluate
 from dmgpred.featurize import featurize
 from dmgpred.train import train
 
+TEST_VALUES_PATH = "./data/test_values.csv"
+TRAIN_VALUES_PATH = "./data/train_values.csv"
+TRAIN_LABELS_PATH = "./data/train_labels.csv"
+SUBMISSION_PATH = "./output/Mandalorians_prediction.csv"
+
 
 def main():
     """Run Prediction Pipeline."""
-    test_values = pd.read_csv("./data/test_values.csv")
-    train_values = pd.read_csv("./data/train_values.csv")
-    train_labels = pd.read_csv("./data/train_labels.csv")
-    sample_submission = pd.read_csv("./data/submission_format.csv")
+    start = time.perf_counter()
+    X_test = pd.read_csv(TEST_VALUES_PATH)
+    X_train = pd.read_csv(TRAIN_VALUES_PATH)
+    y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col="building_id")
 
-    X_train, y_train, X_test = clean(train_values, train_labels, test_values)
+    X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
     model = train(X_train, y_train)
 
-    score, y_pred = evaluate(model, X_train, y_train, X_test)
-    print(f"Score: {score}")
+    # TODO: implement evaluation with custom metrics
+    score = evaluate(model, X_train, y_train)
+    print(f"Matthews Correlation Coefficient: {score: .4f}")
 
-    submission = sample_submission.copy()
-    submission["damage_grade"] = y_pred
-    submission.to_csv("../output/Mandalorians_prediction.csv", index=False)
+    y_pred = model.predict(X_test)
+    submission = pd.DataFrame(
+        {"building_id": X_test["building_id"], "damage_grade": y_pred}
+    )
+    submission.to_csv(SUBMISSION_PATH, index=False)
+    end = time.perf_counter()
+    print(f"Finished in {end - start: .2f} seconds.")
 
 
 if __name__ == "__main__":
