@@ -1,5 +1,5 @@
 [project]
-name = "Task-1-earthquake-damage-prediction"
+name = "earthquake-damage-prediction"
 dynamic = ['version']
 description = "Earthquake damage prediction task 1"
 authors = [
@@ -18,6 +18,10 @@ dependencies = [
     "seaborn>=0.13.2",
 ]
 
+[tool.setuptools_scm]
+
+[project.scripts]
+dmgpred = "dmgpred.__main__:main"
 
 [project.optional-dependencies]
 dev = [
