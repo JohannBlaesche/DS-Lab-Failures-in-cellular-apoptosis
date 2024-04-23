@@ -2,6 +2,7 @@
 
 import time
 
+import numpy as np
 import pandas as pd
 
 from dmgpred.cleaning import clean
@@ -19,6 +20,7 @@ SUBMISSION_PATH = "./output/Mandalorians_prediction.csv"
 def main():
     """Run Prediction Pipeline."""
     # a simple timer, could use TQDM later on for progress bars
+    np.random.seed(0)
     start = time.perf_counter()
 
     X_test = pd.read_csv(TEST_VALUES_PATH)
