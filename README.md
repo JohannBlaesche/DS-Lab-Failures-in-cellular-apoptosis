@@ -3,22 +3,21 @@
 
 ## Quickstart
 
-First, clone the repository and activate a virtual environment of your choice. Then install the required packages using the following command:
+After cloning the repository, you can run the pipeline with the following command if you are on Linux/MacOS:
 
 ```shell
-pip install .
+make
 ```
 
-and run the pipeline with
+which defaults to `make all`.
 
-```shell
-dmgpred
-```
+Alternatively, run the pipeline manually with `dmgpred` after having installed the required packages, e.g. with `pip install .`
 
 ## Development Guide
 
-Setup a virtual environment and install the required packages using the following commands:
+Use the makefile (`make`) or the following commands to setup your dev environment:
 
+Setup a virtual environment and install the required packages using the following commands:
 Posix:
 
 ```shell
