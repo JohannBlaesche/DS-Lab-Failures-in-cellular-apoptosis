@@ -1,9 +1,10 @@
 # Task 1 - Earthquake Damage Prediction
 
-
 ## Quickstart
 
-After cloning the repository, you can run the pipeline with the following command if you are on Linux/MacOS:
+After cloning the repository, place the datafiles inside the `data` directory.
+
+To run the the pipeline with environment setup and installation, use the following command if you are on Linux/MacOS:
 
 ```shell
 make
