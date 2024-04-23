@@ -8,10 +8,8 @@ def clean(*dataframes):
 
     Parameters
     ----------
-    train_values : pd.DataFrame
-        Training features.
-    train_labels : pd.DataFrame
-        Training labels.
+    dataframes : list of pd.DataFrame
+        DataFrames to clean.
 
     Returns
     -------
