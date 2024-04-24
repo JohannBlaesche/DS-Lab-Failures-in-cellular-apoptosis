@@ -3,6 +3,7 @@
 import time
 
 import pandas as pd
+from sklearn import set_config
 
 from dmgpred.cleaning import clean
 from dmgpred.evaluate import evaluate
@@ -20,6 +21,9 @@ def main():
     """Run Prediction Pipeline."""
     # a simple timer, could use TQDM later on for progress bars
     start = time.perf_counter()
+
+    # keep pandas output in transform
+    set_config(transform_output="pandas")
 
     X_test = pd.read_csv(TEST_VALUES_PATH)
     X_train = pd.read_csv(TRAIN_VALUES_PATH)
