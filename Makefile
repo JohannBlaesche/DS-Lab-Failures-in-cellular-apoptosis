@@ -2,11 +2,10 @@
 all: install run
 
 install: venv
-	. venv/bin/activate && pip install -e ".[dev]"
-	pre-commit install
+	. venv/bin/activate && pip3 install -e ".[dev]"
 
 venv:
-	test -d venv || python -m venv venv
+	test -d venv || python3 -m venv venv
 
 run:
 	. venv/bin/activate && dmgpred
