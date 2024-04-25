@@ -4,6 +4,7 @@ import time
 
 import numpy as np
 import pandas as pd
+from sklearn import set_config
 
 from dmgpred.cleaning import clean
 from dmgpred.evaluate import evaluate
@@ -15,6 +16,7 @@ TEST_VALUES_PATH = f"{DATA_PATH}/test_values.csv"
 TRAIN_VALUES_PATH = f"{DATA_PATH}/train_values.csv"
 TRAIN_LABELS_PATH = f"{DATA_PATH}/train_labels.csv"
 SUBMISSION_PATH = "./output/Mandalorians_prediction.csv"
+INDEX_COL = "building_id"
 
 
 def main():
@@ -23,13 +25,14 @@ def main():
     np.random.seed(0)
     start = time.perf_counter()
 
-    X_test = pd.read_csv(TEST_VALUES_PATH)
-    X_train = pd.read_csv(TRAIN_VALUES_PATH)
+    # keep pandas output in transform
+    set_config(transform_output="pandas")
+    X_test = pd.read_csv(TEST_VALUES_PATH, index_col="building_id")
+    X_train = pd.read_csv(TRAIN_VALUES_PATH, index_col=INDEX_COL)
 
     # need building id as index here,
     # otherwise it is interpreted as multi-output classification
-    y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col="building_id")
-
+    y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col=INDEX_COL)
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
 
@@ -41,9 +44,7 @@ def main():
     score = evaluate(model, X_train, y_train)
     print(f"Matthews Correlation Coefficient: {score: .4f}")
 
-    submission = pd.DataFrame(
-        {"building_id": X_test["building_id"], "damage_grade": y_pred}
-    )
+    submission = pd.DataFrame({"building_id": X_test.index, "damage_grade": y_pred})
     submission.to_csv(SUBMISSION_PATH, index=False)
     end = time.perf_counter()
     print(f"Finished in {end - start: .2f} seconds.")
