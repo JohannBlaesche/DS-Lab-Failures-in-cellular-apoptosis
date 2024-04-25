@@ -1,6 +1,7 @@
 """Main Script of the pipeline."""
 
 import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -12,10 +13,11 @@ from dmgpred.featurize import featurize
 from dmgpred.train import train
 
 DATA_PATH = "./data/"
+OUTPUT_PATH = "./output/"
 TEST_VALUES_PATH = f"{DATA_PATH}/test_values.csv"
 TRAIN_VALUES_PATH = f"{DATA_PATH}/train_values.csv"
 TRAIN_LABELS_PATH = f"{DATA_PATH}/train_labels.csv"
-SUBMISSION_PATH = "./output/Mandalorians_prediction.csv"
+SUBMISSION_PATH = f"{OUTPUT_PATH}/Mandalorians_prediction.csv"
 INDEX_COL = "building_id"
 TARGET = "damage_grade"
 
@@ -45,6 +47,7 @@ def main():
     score = evaluate(model, X_train, y_train)
     print(f"Matthews Correlation Coefficient: {score: .4f}")
 
+    Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
     submission = pd.DataFrame({INDEX_COL: X_test.index, TARGET: y_pred})
     submission.to_csv(SUBMISSION_PATH, index=False)
     end = time.perf_counter()
