@@ -1,5 +1,7 @@
 """Cleaning step in the pipeline."""
 
+from typing import Literal
+
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import PowerTransformer
@@ -40,6 +42,7 @@ def clean_single(X: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         Cleaned DataFrame.
     """
+    X = handle_rare_categoricals(X)  # must be before dtype conversion
     X = dtype_conversion(X)
     X = handle_outliers(X)
     return X
@@ -63,6 +66,7 @@ def get_normalization_pipeline():
             (
                 "box-cox",
                 PowerTransformer(method="yeo-johnson"),
+                # maybe transform age as well?
                 ["area_percentage", "height_percentage"],
             )
         ],
@@ -83,3 +87,23 @@ def dtype_conversion(X_train):
     X_train[id_cols] = X_train[id_cols].astype("category")
 
     return X_train
+
+
+def handle_rare_categoricals(
+    X: pd.DataFrame,
+    threshold: float = 0.02,
+    method: Literal["replace", "remove"] = "replace",
+):
+    """Handle rare categories in a categorical column."""
+    cols = X.select_dtypes(include="object").columns
+    for col in cols:
+        counts = X[col].value_counts(normalize=True).sort_values(ascending=False)
+        filter_out = counts[counts < threshold].index
+
+        if method == "replace":
+            X[col] = X[col].replace(filter_out, "other")
+        elif method == "remove":
+            X = X.loc[~X[col].isin(filter_out)]
+        else:
+            raise ValueError("method must be either 'replace' or 'remove'")
+    return X
