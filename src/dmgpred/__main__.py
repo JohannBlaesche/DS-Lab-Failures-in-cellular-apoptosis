@@ -31,7 +31,6 @@ def main():
     # need building id as index here,
     # otherwise it is interpreted as multi-output classification
     y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col="building_id")
-
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
 
