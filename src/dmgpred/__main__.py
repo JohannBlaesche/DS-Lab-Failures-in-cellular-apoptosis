@@ -17,6 +17,7 @@ TRAIN_VALUES_PATH = f"{DATA_PATH}/train_values.csv"
 TRAIN_LABELS_PATH = f"{DATA_PATH}/train_labels.csv"
 SUBMISSION_PATH = "./output/Mandalorians_prediction.csv"
 INDEX_COL = "building_id"
+TARGET = "damage_grade"
 
 
 def main():
@@ -27,7 +28,7 @@ def main():
 
     # keep pandas output in transform
     set_config(transform_output="pandas")
-    X_test = pd.read_csv(TEST_VALUES_PATH, index_col="building_id")
+    X_test = pd.read_csv(TEST_VALUES_PATH, index_col=INDEX_COL)
     X_train = pd.read_csv(TRAIN_VALUES_PATH, index_col=INDEX_COL)
 
     # need building id as index here,
@@ -44,7 +45,7 @@ def main():
     score = evaluate(model, X_train, y_train)
     print(f"Matthews Correlation Coefficient: {score: .4f}")
 
-    submission = pd.DataFrame({"building_id": X_test.index, "damage_grade": y_pred})
+    submission = pd.DataFrame({INDEX_COL: X_test.index, TARGET: y_pred})
     submission.to_csv(SUBMISSION_PATH, index=False)
     end = time.perf_counter()
     print(f"Finished in {end - start: .2f} seconds.")
