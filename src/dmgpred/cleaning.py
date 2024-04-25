@@ -41,15 +41,18 @@ def clean_single(X: pd.DataFrame) -> pd.DataFrame:
         Cleaned DataFrame.
     """
     X = dtype_conversion(X)
-    X = remove_outliers(X)
+    X = handle_outliers(X)
     return X
 
 
-def remove_outliers(X: pd.DataFrame) -> pd.DataFrame:
+def handle_outliers(X: pd.DataFrame) -> pd.DataFrame:
     """Remove outliers from X."""
-    # remove outliers in age column by removing rows with age > 99th percentile
+    # TODO: cannot remove outliers because we need access to y_train as well
+    # alternative: use imblearn pipeline, that can handle this
+
+    # clip outliers in age column to 99th percentile
     age_threshold = X["age"].quantile(0.99)
-    X = X[X["age"] <= age_threshold]
+    X["age"] = X["age"].clip(upper=age_threshold)
     return X
 
 
@@ -59,7 +62,7 @@ def get_normalization_pipeline():
         transformers=[
             (
                 "box-cox",
-                PowerTransformer(method="box-cox"),
+                PowerTransformer(method="yeo-johnson"),
                 ["area_percentage", "height_percentage"],
             )
         ],
