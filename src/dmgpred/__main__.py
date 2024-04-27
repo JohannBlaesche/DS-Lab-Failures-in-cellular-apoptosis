@@ -24,9 +24,22 @@ TARGET = "damage_grade"
 
 
 @click.command()
-@click.option("--add-metrics", default=None, help="Additional scoring metrics")
+@click.option(
+    "--add-metrics",
+    default=None,
+    help="Additional scoring metrics to report in evaluation.",
+)
 def main(add_metrics):
-    """Run Prediction Pipeline."""
+    """Run the Damage Prediction Pipeline.
+
+    This pipeline consists of four steps, namely cleaning, featurization,
+    training and evaluation.
+
+    The cleaned and featurized data is used to train a model on the full dataset and
+    to evaluate the model using cross-validation with StratifiedKFold splits.
+    The model is then used to predict the
+    damage grade of the test data and the results are saved to a CSV file.
+    """
     # a simple timer, could use TQDM later on for progress bars
     np.random.seed(0)
     start = time.perf_counter()
@@ -39,6 +52,7 @@ def main(add_metrics):
     # need building id as index here,
     # otherwise it is interpreted as multi-output classification
     y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col=INDEX_COL)
+
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
 

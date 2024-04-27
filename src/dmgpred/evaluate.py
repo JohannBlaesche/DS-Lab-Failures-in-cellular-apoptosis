@@ -15,7 +15,14 @@ def evaluate(
     verbose=True,
     **kwargs,
 ) -> float:
-    """Run the evaluation.
+    """Evaluate the model using cross-validation.
+
+    The given model is evaluated with cross-validation, using a
+    stratified KFold with the given number of folds. The Matthews
+    Correlation Coefficient as well as F1 Micro are reported by default.
+    This function can also compute additional scoring metrics passed via
+    the additional_scoring parameter. The results are printed to the console
+    if verbose is set to True.
 
     Parameters
     ----------
@@ -29,7 +36,11 @@ def evaluate(
         Number of folds for cross-validation, by default 5.
     additional_scoring : dict, optional
         Additional scoring metrics to compute, by default None.
-        Must be a dict of str, str or str, callable.
+        Must be a dict of str, str or dict of str, callable.
+        If a dict of str, str is passed, the value must match a name
+        of a sklearn metric. If a dict of str, callable is passed, the
+        callable must be a valid scoring function, e.g. one created with
+        `make_scorer` from sklearn.metrics.
 
     Returns
     -------
