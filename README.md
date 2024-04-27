@@ -14,6 +14,18 @@ which defaults to `make all`.
 
 Alternatively, run the pipeline manually with `dmgpred` after having installed the required packages, e.g. with `pip install .`
 
+## Pipeline CLI arguments
+
+Additional metrics can be specified using the `--add-metrics` argument. It must be a list of strings, where each string is the name of a metric to be calculated. The available metrics are documented on sklearns documentation [page](https://scikit-learn.org/stable/modules/model_evaluation.html). For example:
+
+```shell
+dmgpred --add-metrics="f1_macro,roc_auc_ovr"
+```
+
+or just `dmgpred` to use the defaults, which are MCC and F1 Micro averaged.
+
+See the help for the pipeline `dmgpred --help` for more information on the arguments.
+
 ## Development Guide
 
 Use the makefile (`make`) or the following commands to setup your dev environment:

@@ -3,6 +3,7 @@
 import time
 from pathlib import Path
 
+import click
 import numpy as np
 import pandas as pd
 from sklearn import set_config
@@ -22,7 +23,9 @@ INDEX_COL = "building_id"
 TARGET = "damage_grade"
 
 
-def main():
+@click.command()
+@click.option("--add-metrics", default=None, help="Additional scoring metrics")
+def main(add_metrics):
     """Run Prediction Pipeline."""
     # a simple timer, could use TQDM later on for progress bars
     np.random.seed(0)
@@ -42,11 +45,10 @@ def main():
     model = train(X_train, y_train)
     y_pred = model.predict(X_test)
 
-    # TODO: implement evaluation with custom metrics
-    # e.g. with command-line arguments, or later with Hydra
-    scores = evaluate(model, X_train, y_train)
-    avg, std = np.mean(scores), np.std(scores)
-    print(f"F1-Score (Micro-averaged): {avg: .4f} (± {std: .2f})")
+    if add_metrics is not None:
+        add_metrics = {metric: metric for metric in add_metrics.split(",")}
+
+    _ = evaluate(model, X_train, y_train, additional_scoring=add_metrics)
 
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
     submission = pd.DataFrame({INDEX_COL: X_test.index, TARGET: y_pred})
