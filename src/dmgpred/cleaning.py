@@ -43,6 +43,8 @@ def clean_single(X: pd.DataFrame) -> pd.DataFrame:
         Cleaned DataFrame.
     """
     X = handle_rare_categoricals(X)  # must be before dtype conversion
+    X = remove_rare_binary_cols(X)
+    X = remove_columns(X, ["count_floors_pre_eq"])
     X = dtype_conversion(X)
     X = handle_outliers(X)
     return X
@@ -107,3 +109,18 @@ def handle_rare_categoricals(
         else:
             raise ValueError("method must be either 'replace' or 'remove'")
     return X
+
+
+def remove_rare_binary_cols(X: pd.DataFrame, threshold: float = 0.01):
+    """Remove binary columns with rare values."""
+    binary_cols = [col for col in X.columns if col.startswith("has")]
+    for col in binary_cols:
+        counts = X[col].value_counts(normalize=True)
+        if counts.min() < threshold:
+            X = X.drop(columns=[col])
+    return X
+
+
+def remove_columns(X: pd.DataFrame, columns: list):
+    """Remove columns from the DataFrame."""
+    return X.drop(columns=columns)
