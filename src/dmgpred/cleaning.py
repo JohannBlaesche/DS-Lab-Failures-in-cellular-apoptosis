@@ -66,9 +66,8 @@ def get_normalization_pipeline():
     normalizer = ColumnTransformer(
         transformers=[
             (
-                "box-cox",
+                "percentage_normalizer",
                 PowerTransformer(method="yeo-johnson"),
-                # maybe transform age as well?
                 ["area_percentage", "height_percentage"],
             )
         ],

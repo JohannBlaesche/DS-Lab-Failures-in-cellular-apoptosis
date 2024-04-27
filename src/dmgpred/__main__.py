@@ -44,8 +44,9 @@ def main():
 
     # TODO: implement evaluation with custom metrics
     # e.g. with command-line arguments, or later with Hydra
-    score = evaluate(model, X_train, y_train)
-    print(f"Matthews Correlation Coefficient: {score: .4f}")
+    scores = evaluate(model, X_train, y_train)
+    avg, std = np.mean(scores), np.std(scores)
+    print(f"F1-Score (Micro-averaged): {avg: .4f} (± {std: .2f})")
 
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
     submission = pd.DataFrame({INDEX_COL: X_test.index, TARGET: y_pred})
