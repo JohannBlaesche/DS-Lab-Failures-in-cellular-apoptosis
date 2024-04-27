@@ -66,9 +66,10 @@ def get_normalization_pipeline():
     normalizer = ColumnTransformer(
         transformers=[
             (
-                "box-cox",
+                "percentage_normalizer",
+                # equivalent to box-cox for positive values,
+                # but it can handle zeros (and negative) as well
                 PowerTransformer(method="yeo-johnson"),
-                # maybe transform age as well?
                 ["area_percentage", "height_percentage"],
             )
         ],

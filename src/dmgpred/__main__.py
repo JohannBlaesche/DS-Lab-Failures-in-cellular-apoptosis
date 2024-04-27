@@ -3,6 +3,7 @@
 import time
 from pathlib import Path
 
+import click
 import numpy as np
 import pandas as pd
 from sklearn import set_config
@@ -22,8 +23,23 @@ INDEX_COL = "building_id"
 TARGET = "damage_grade"
 
 
-def main():
-    """Run Prediction Pipeline."""
+@click.command()
+@click.option(
+    "--add-metrics",
+    default=None,
+    help="Additional scoring metrics to report in evaluation.",
+)
+def main(add_metrics):
+    """Run the Damage Prediction Pipeline.
+
+    This pipeline consists of four steps, namely cleaning, featurization,
+    training and evaluation.
+
+    The cleaned and featurized data is used to train a model on the full dataset and
+    to evaluate the model using cross-validation with StratifiedKFold splits.
+    The model is then used to predict the
+    damage grade of the test data and the results are saved to a CSV file.
+    """
     # a simple timer, could use TQDM later on for progress bars
     np.random.seed(0)
     start = time.perf_counter()
@@ -36,16 +52,17 @@ def main():
     # need building id as index here,
     # otherwise it is interpreted as multi-output classification
     y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col=INDEX_COL)
+
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
 
     model = train(X_train, y_train)
     y_pred = model.predict(X_test)
 
-    # TODO: implement evaluation with custom metrics
-    # e.g. with command-line arguments, or later with Hydra
-    score = evaluate(model, X_train, y_train)
-    print(f"Matthews Correlation Coefficient: {score: .4f}")
+    if add_metrics is not None:
+        add_metrics = {metric: metric for metric in add_metrics.split(",")}
+
+    _ = evaluate(model, X_train, y_train, additional_scoring=add_metrics)
 
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
     submission = pd.DataFrame({INDEX_COL: X_test.index, TARGET: y_pred})
