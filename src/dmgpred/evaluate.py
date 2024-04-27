@@ -44,8 +44,8 @@ def evaluate(
 
     Returns
     -------
-    mcc : float
-        Matthews Correlation Coefficient.
+    results : dict
+        The results dict of sklearn.model_selection.cross_validate.
     """
     cv = StratifiedKFold(n_splits=n_folds)
 
