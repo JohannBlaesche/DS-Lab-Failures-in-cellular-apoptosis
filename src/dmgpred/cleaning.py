@@ -77,18 +77,19 @@ def get_normalization_pipeline():
     return normalizer
 
 
-def dtype_conversion(X_train):
+def dtype_conversion(X: pd.DataFrame):
     """Convert columns types."""
-    cat_cols = X_train.select_dtypes(include="object").columns
-    binary_cols = [col for col in X_train.columns if col.startswith("has")]
-    X_train[binary_cols] = X_train[binary_cols].astype(bool)
-    X_train[cat_cols] = X_train[cat_cols].astype("category")
-    percentage_cols = [col for col in X_train.columns if col.endswith("percentage")]
-    X_train[percentage_cols] = X_train[percentage_cols].astype(float) / 100.0
-    id_cols = [col for col in X_train.columns if col.endswith("id")]
-    X_train[id_cols] = X_train[id_cols].astype("category")
+    cat_cols = X.select_dtypes(include="object").columns
+    binary_cols = [col for col in X.columns if col.startswith("has")]
+    id_cols = [col for col in X.columns if col.endswith("id")]
+    X[binary_cols] = X[binary_cols].astype(bool)
+    X[cat_cols] = X[cat_cols].astype("category")
+    X[id_cols] = X[id_cols].astype("category")
+    X["count_families"] = pd.cut(
+        X["count_families"], [0, 1, 2, 10], right=False, labels=["0", "1", "2+"]
+    )
 
-    return X_train
+    return X
 
 
 def handle_rare_categoricals(
