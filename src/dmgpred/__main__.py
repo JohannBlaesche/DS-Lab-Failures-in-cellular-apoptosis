@@ -6,6 +6,7 @@ from pathlib import Path
 import click
 import numpy as np
 import pandas as pd
+from joblib import dump
 from sklearn import set_config
 
 from dmgpred.cleaning import clean
@@ -57,6 +58,7 @@ def main(add_metrics):
     X_train, X_test = featurize(X_train, X_test)
 
     model = train(X_train, y_train)
+    dump(model, f"{OUTPUT_PATH}/trained_model.pkl")
     y_pred = model.predict(X_test)
 
     if add_metrics is not None:
