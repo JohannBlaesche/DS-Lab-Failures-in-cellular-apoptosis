@@ -1,7 +1,7 @@
 """Training step in the pipeline."""
 
 import pandas as pd
-from sklearn.dummy import DummyClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 
 from dmgpred.cleaning import get_normalization_pipeline
@@ -15,10 +15,11 @@ def train(X_train: pd.DataFrame, y_train: pd.DataFrame):
             ("normalizer", normalizer),
             (
                 "clf",
-                DummyClassifier(strategy="most_frequent"),
+                RandomForestClassifier(random_state=42, max_depth=3, n_estimators=50),
             ),
-        ]
+        ],
+        verbose=True,
     )
-
-    model.fit(X_train, y_train)
+    print(X_train.info())
+    model.fit(X_train, y_train.to_numpy().ravel())
     return model
