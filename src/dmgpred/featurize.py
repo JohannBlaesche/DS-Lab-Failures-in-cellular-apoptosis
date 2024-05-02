@@ -1,7 +1,7 @@
 """Featurization step in the pipeline."""
 
 import pandas as pd
-from sklearn.compose import ColumnTransformer, make_column_selector
+from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 
 
@@ -47,16 +47,18 @@ def featurize_single(X: pd.DataFrame) -> pd.DataFrame:
 
 def get_encoder(X: pd.DataFrame):
     """Return the categorical encoder for the pipeline."""
-    nominal_cols = X.select_dtypes(include="category").columns
-    nominal_cols = nominal_cols.difference(["count_families"])
+    # cannot use make_column_selector because we need to exclude count_families
+    nominal_cols = X.select_dtypes(include=["category", "object"]).columns
+    ordinal_cols = ["count_families"]
+    nominal_cols = nominal_cols.difference(ordinal_cols)
     return ColumnTransformer(
         transformers=[
             (
                 "nominal",
                 OneHotEncoder(sparse_output=False),
-                make_column_selector(dtype_include="category"),
+                nominal_cols,
             ),
-            ("ordinal", OrdinalEncoder(), ["count_families"]),
+            ("ordinal", OrdinalEncoder(), ordinal_cols),
         ],
         remainder="passthrough",
         verbose_feature_names_out=False,
