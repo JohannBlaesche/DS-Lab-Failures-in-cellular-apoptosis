@@ -1,8 +1,8 @@
 """Featurization step in the pipeline."""
 
-import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 
 
 def featurize(*dataframes):
@@ -42,15 +42,24 @@ def featurize_single(X: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         DataFrame with featurization applied.
     """
-    X = encode_categoricals(X)
     return X
 
 
-def encode_categoricals(X: pd.DataFrame) -> pd.DataFrame:
-    """Encode categorical columns using one-hot encoding."""
-    object_cols = X.select_dtypes(include="object").columns.to_numpy()
-    object_cols = np.append(object_cols, "count_families")
-    for col in object_cols:
-        le = LabelEncoder()
-        X[col] = le.fit_transform(X[col])
-    return X
+def get_encoder(X: pd.DataFrame):
+    """Return the categorical encoder for the pipeline."""
+    # cannot use make_column_selector because we need to exclude count_families
+    nominal_cols = X.select_dtypes(include=["category", "object"]).columns
+    ordinal_cols = ["count_families"]
+    nominal_cols = nominal_cols.difference(ordinal_cols)
+    return ColumnTransformer(
+        transformers=[
+            (
+                "nominal",
+                OneHotEncoder(sparse_output=False),
+                nominal_cols,
+            ),
+            ("ordinal", OrdinalEncoder(), ordinal_cols),
+        ],
+        remainder="passthrough",
+        verbose_feature_names_out=False,
+    )
