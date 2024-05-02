@@ -5,21 +5,23 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 
 from dmgpred.cleaning import get_normalization_pipeline
+from dmgpred.featurize import get_encoder
 
 
 def train(X_train: pd.DataFrame, y_train: pd.DataFrame):
     """Run the training step."""
     normalizer = get_normalization_pipeline()
+    encoder = get_encoder(X_train)
     model = Pipeline(
         [
             ("normalizer", normalizer),
+            ("encode", encoder),
             (
                 "clf",
-                RandomForestClassifier(random_state=42, max_depth=3, n_estimators=50),
+                RandomForestClassifier(max_depth=3, n_estimators=50),
             ),
         ],
-        verbose=True,
+        verbose=False,
     )
-    print(X_train.info())
-    model.fit(X_train, y_train.to_numpy().ravel())
+    model.fit(X_train, y_train)
     return model

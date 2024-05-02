@@ -14,8 +14,8 @@ from dmgpred.evaluate import evaluate
 from dmgpred.featurize import featurize
 from dmgpred.train import train
 
-DATA_PATH = "./data/"
-OUTPUT_PATH = "./output/"
+DATA_PATH = "./data"
+OUTPUT_PATH = "./output"
 TEST_VALUES_PATH = f"{DATA_PATH}/test_values.csv"
 TRAIN_VALUES_PATH = f"{DATA_PATH}/train_values.csv"
 TRAIN_LABELS_PATH = f"{DATA_PATH}/train_labels.csv"
@@ -53,6 +53,7 @@ def main(add_metrics):
     # need building id as index here,
     # otherwise it is interpreted as multi-output classification
     y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col=INDEX_COL)
+    y_train = y_train[TARGET]
 
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)

@@ -85,7 +85,7 @@ def dtype_conversion(X: pd.DataFrame):
     binary_cols = [col for col in X.columns if col.startswith("has")]
     # id_cols = [col for col in X.columns if col.endswith("id")]
     X[binary_cols] = X[binary_cols].astype(bool)
-    # X[cat_cols] = X[cat_cols].astype("category")
+    X[cat_cols] = X[cat_cols].astype("category")
     # X[id_cols] = X[id_cols].astype("category")
     X["count_families"] = pd.cut(
         X["count_families"], [0, 1, 2, 10], right=False, labels=["0", "1", "2+"]
