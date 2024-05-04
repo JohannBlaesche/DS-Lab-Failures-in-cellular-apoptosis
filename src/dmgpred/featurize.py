@@ -2,8 +2,9 @@
 
 import pandas as pd
 from category_encoders import TargetEncoder
+from category_encoders.james_stein import JamesSteinEncoder
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
+from sklearn.preprocessing import OrdinalEncoder
 
 
 def featurize(*dataframes):
@@ -57,7 +58,7 @@ def get_encoder(X: pd.DataFrame):
         transformers=[
             (
                 "nominal",
-                OneHotEncoder(sparse_output=False),
+                JamesSteinEncoder(),
                 nominal_cols,
             ),
             ("ordinal", OrdinalEncoder(), ordinal_cols),
