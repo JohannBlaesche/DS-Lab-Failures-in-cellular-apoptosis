@@ -1,7 +1,6 @@
 """Featurization step in the pipeline."""
 
 import pandas as pd
-from category_encoders import TargetEncoder
 from category_encoders.james_stein import JamesSteinEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OrdinalEncoder
@@ -44,7 +43,6 @@ def featurize_single(X: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         DataFrame with featurization applied.
     """
-    X = reverse_superstructure_encoding(X)
     return X
 
 
@@ -53,7 +51,7 @@ def get_encoder(X: pd.DataFrame):
     # cannot use make_column_selector because we need to exclude count_families
     nominal_cols = X.select_dtypes(include=["category", "object"]).columns
     ordinal_cols = ["count_families"]
-    nominal_cols = nominal_cols.difference(ordinal_cols + ["has_superstructure"])
+    nominal_cols = nominal_cols.difference(ordinal_cols)
     return ColumnTransformer(
         transformers=[
             (
@@ -62,7 +60,6 @@ def get_encoder(X: pd.DataFrame):
                 nominal_cols,
             ),
             ("ordinal", OrdinalEncoder(), ordinal_cols),
-            ("target_enc", TargetEncoder(), ["has_superstructure"]),
         ],
         remainder="passthrough",
         verbose_feature_names_out=False,
