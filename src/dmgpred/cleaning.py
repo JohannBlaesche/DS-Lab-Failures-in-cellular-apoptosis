@@ -46,18 +46,6 @@ def clean_single(X: pd.DataFrame) -> pd.DataFrame:
     X = remove_rare_binary_cols(X)
     X = remove_columns(X, ["count_floors_pre_eq"])
     X = dtype_conversion(X)
-    X = handle_outliers(X)
-    return X
-
-
-def handle_outliers(X: pd.DataFrame) -> pd.DataFrame:
-    """Remove outliers from X."""
-    # TODO: cannot remove outliers because we need access to y_train as well
-    # alternative: use imblearn pipeline, that can handle this
-
-    # clip outliers in age column to 99th percentile
-    age_threshold = X["age"].quantile(0.99)
-    X["age"] = X["age"].clip(upper=age_threshold)
     return X
 
 
