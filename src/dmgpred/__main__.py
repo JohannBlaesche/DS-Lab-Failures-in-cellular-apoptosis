@@ -1,5 +1,6 @@
 """Main Script of the pipeline."""
 
+import sys
 import time
 from pathlib import Path
 
@@ -7,6 +8,7 @@ import click
 import numpy as np
 import pandas as pd
 from joblib import dump
+from loguru import logger
 from sklearn import set_config
 
 from dmgpred.cleaning import clean
@@ -35,7 +37,14 @@ TARGET = "damage_grade"
     default=5,
     help="Number of folds for cross-validation.",
 )
-def main(add_metrics, n_folds):
+@click.option(
+    "--log-level",
+    default="info",
+    type=click.Choice(
+        ["debug", "info", "success", "warning", "error"], case_sensitive=False
+    ),
+)
+def main(add_metrics, n_folds, log_level):
     """Run the Damage Prediction Pipeline.
 
     This pipeline consists of four steps, namely cleaning, featurization,
@@ -47,11 +56,13 @@ def main(add_metrics, n_folds):
     damage grade of the test data and the results are saved to a CSV file.
     """
     # a simple timer, could use TQDM later on for progress bars
+    setup_logger(log_level)
     np.random.seed(0)
     start = time.perf_counter()
 
     # keep pandas output in transform
     set_config(transform_output="pandas")
+    logger.info("Preparing the data...")
     X_test = pd.read_csv(TEST_VALUES_PATH, index_col=INDEX_COL)
     X_train = pd.read_csv(TRAIN_VALUES_PATH, index_col=INDEX_COL)
 
@@ -63,13 +74,16 @@ def main(add_metrics, n_folds):
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
 
+    logger.info("Training the model on full dataset...")
     model = train(X_train, y_train)
     dump(model, f"{OUTPUT_PATH}/trained_model.pkl")
+    logger.info(f"Model saved to {OUTPUT_PATH}/trained_model.pkl")
     y_pred = model.predict(X_test)
 
     if add_metrics is not None:
         add_metrics = {metric: metric for metric in add_metrics.split(",")}
 
+    logger.info(f"Evaluating the model with {n_folds}-fold Cross-Validation...")
     _ = evaluate(
         model,
         X_train,
@@ -82,8 +96,25 @@ def main(add_metrics, n_folds):
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
     submission = pd.DataFrame({INDEX_COL: X_test.index, TARGET: y_pred})
     submission.to_csv(SUBMISSION_PATH, index=False)
+    logger.info(f"Submission saved to {SUBMISSION_PATH}")
     end = time.perf_counter()
-    print(f"Finished in {end - start: .2f} seconds.")
+    logger.success(f"Finished in {end - start: .2f} seconds.")
+
+
+def setup_logger(level: str):
+    """Set up the logger."""
+    logger_config = {
+        "handlers": [
+            {
+                "sink": sys.stdout,
+                "format": "{time:DD-MMM-YYYY HH:mm:ss} | {level: <8} | {message}",
+                "level": level.upper(),
+            },
+            {"sink": f"{OUTPUT_PATH}/dmgpred.log", "rotation": "1 day"},
+        ],
+    }
+    logger.enable("dmgpred")
+    logger.configure(**logger_config)
 
 
 if __name__ == "__main__":

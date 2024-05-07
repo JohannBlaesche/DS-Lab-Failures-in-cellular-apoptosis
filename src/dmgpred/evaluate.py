@@ -1,6 +1,7 @@
 """Evaluation step in the pipeline."""
 
 import pandas as pd
+from loguru import logger
 from sklearn.base import BaseEstimator
 from sklearn.metrics import make_scorer, matthews_corrcoef
 from sklearn.model_selection import StratifiedKFold, cross_validate
@@ -12,7 +13,6 @@ def evaluate(
     y: pd.Series,
     n_folds: int = 5,
     additional_scoring: dict | None = None,
-    verbose=True,
     **kwargs,
 ) -> float:
     """Evaluate the model using cross-validation.
@@ -60,9 +60,8 @@ def evaluate(
 
     results = cross_validate(model, X, y, cv=cv, scoring=scoring, **kwargs)
 
-    if verbose:
-        for key in scoring:
-            scores = results[f"test_{key}"]
-            print(f"{key}: {scores.mean(): .4f} (± {scores.std(): .2f})")
+    for key in scoring:
+        scores = results[f"test_{key}"]
+        logger.success(f"{key}: {scores.mean(): .4f} (± {scores.std(): .2f})")
 
     return results
