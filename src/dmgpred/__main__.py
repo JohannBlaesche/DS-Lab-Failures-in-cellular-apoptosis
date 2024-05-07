@@ -30,7 +30,12 @@ TARGET = "damage_grade"
     default=None,
     help="Additional scoring metrics to report in evaluation.",
 )
-def main(add_metrics):
+@click.option(
+    "--n-folds",
+    default=5,
+    help="Number of folds for cross-validation.",
+)
+def main(add_metrics, n_folds):
     """Run the Damage Prediction Pipeline.
 
     This pipeline consists of four steps, namely cleaning, featurization,
@@ -65,7 +70,14 @@ def main(add_metrics):
     if add_metrics is not None:
         add_metrics = {metric: metric for metric in add_metrics.split(",")}
 
-    _ = evaluate(model, X_train, y_train, additional_scoring=add_metrics, n_jobs=-1)
+    _ = evaluate(
+        model,
+        X_train,
+        y_train,
+        n_folds=n_folds,
+        additional_scoring=add_metrics,
+        n_jobs=-1,
+    )
 
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
     submission = pd.DataFrame({INDEX_COL: X_test.index, TARGET: y_pred})
