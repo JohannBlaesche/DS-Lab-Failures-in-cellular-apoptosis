@@ -65,7 +65,7 @@ def main(add_metrics):
     if add_metrics is not None:
         add_metrics = {metric: metric for metric in add_metrics.split(",")}
 
-    _ = evaluate(model, X_train, y_train, additional_scoring=add_metrics)
+    _ = evaluate(model, X_train, y_train, additional_scoring=add_metrics, n_jobs=-1)
 
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
     submission = pd.DataFrame({INDEX_COL: X_test.index, TARGET: y_pred})
