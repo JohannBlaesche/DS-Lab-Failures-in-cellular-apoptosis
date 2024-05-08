@@ -1,9 +1,15 @@
 """Evaluation step in the pipeline."""
 
+import numpy as np
 import pandas as pd
 from loguru import logger
 from sklearn.base import BaseEstimator
-from sklearn.metrics import make_scorer, matthews_corrcoef
+from sklearn.metrics import (
+    get_scorer,
+    get_scorer_names,
+    make_scorer,
+    matthews_corrcoef,
+)
 from sklearn.model_selection import StratifiedKFold, cross_validate
 
 
@@ -59,9 +65,57 @@ def evaluate(
     }
 
     results = cross_validate(model, X, y, cv=cv, scoring=scoring, **kwargs)
-
+    print(results)
     for key in scoring:
         scores = results[f"test_{key}"]
         logger.success(f"{key}: {scores.mean(): .4f} (± {scores.std(): .2f})")
 
     return results
+
+
+def cross_validate_custom(model, X, y, cv, scoring):
+    """
+    Perform cross-validation with given scoring metrics.
+
+    Parameters
+    ----------
+    model : scikit-learn like model with fit and predict methods.
+        The model to evaluate.
+    X : pd.DataFrame
+        Features.
+    y : pd.Series
+        Labels.
+    cv : cross-validation generator
+        A cross-validation iterator with `split` method.
+    scoring : dict
+        A dictionary where keys are strings representing scoring metric names and values
+        are either strings representing predefined scorer names in scikit-learn's
+        'metrics' module or scorer functions.
+
+    Returns
+    -------
+    scores : dict
+        A dictionary containing the scores for each fold and each scoring metric.
+        Keys are strings in the format 'test_<scoring_metric>', where <scoring_metric>
+        is the name of the scoring metric. Values are arrays of shape (n_splits,)
+        containing the scores for each fold.
+    """
+    scores = dict()
+    for key in scoring:
+        scores[f"test_{key}"] = np.zeros(cv.n_splits)
+    for i, (train_index, test_index) in enumerate(cv.split(X, y)):
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        for key in scoring:
+            scoring_arr = scores[f"test_{key}"]
+            scorer = scoring[key]
+            if scorer in get_scorer_names():
+                scorer_func = get_scorer(scorer)
+                score = scorer_func(y_test, y_pred)
+            else:
+                score = scorer(y_test, y_pred)
+            scoring_arr[i] = score
+
+    return scores
