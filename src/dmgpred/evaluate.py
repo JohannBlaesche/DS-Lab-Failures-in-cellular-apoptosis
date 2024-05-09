@@ -2,15 +2,19 @@
 
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 from loguru import logger
 from sklearn.base import BaseEstimator
 from sklearn.metrics import (
+    f1_score,
     get_scorer,
     get_scorer_names,
     make_scorer,
     matthews_corrcoef,
 )
 from sklearn.model_selection import StratifiedKFold
+
+from dmgpred.train import train
 
 
 def evaluate(
@@ -65,7 +69,6 @@ def evaluate(
     }
 
     results = cross_validate_custom(model, X, y, cv=cv, scoring=scoring)
-    print(results)
     for key in scoring:
         scores = results[f"test_{key}"]
         logger.success(f"{key}: {scores.mean(): .4f} (± {scores.std(): .2f})")
@@ -118,3 +121,34 @@ def cross_validate_custom(model, X, y, cv, scoring):
             scoring_arr[i] = score
 
     return scores
+
+
+def parallel_cv(X, y, cv):
+    """
+    Attempt to parallelize the cross validation loop.
+
+    Not yet working.
+    """
+    scores = dict()
+
+    def train_model(train_index, test_index):
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+        # model.fit(X_train, y_train) #this is where an error occurs
+        model = train(X_train, y_train)  # alternative, but same error
+        y_pred = model.predict(X_test)
+
+        f1 = f1_score(y_test, y_pred, average="micro")
+        mcc = matthews_corrcoef(y_test, y_pred)
+
+        return dict(f1=f1, mcc=mcc)
+
+    out = Parallel(n_jobs=5)(
+        delayed(train_model)(train_index, test_index)
+        for i, (train_index, test_index) in enumerate(cv.split(X, y))
+    )
+
+    f1_scores = [d["f1"] for d in out]
+    mcc = [d["mcc"] for d in out]
+    scores["test_MCC"] = f1_scores
+    scores["test_F1 Micro"] = mcc
