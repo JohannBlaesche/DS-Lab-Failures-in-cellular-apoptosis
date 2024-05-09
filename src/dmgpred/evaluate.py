@@ -10,7 +10,7 @@ from sklearn.metrics import (
     make_scorer,
     matthews_corrcoef,
 )
-from sklearn.model_selection import StratifiedKFold, cross_validate
+from sklearn.model_selection import StratifiedKFold
 
 
 def evaluate(
@@ -64,7 +64,7 @@ def evaluate(
         **additional_scoring,
     }
 
-    results = cross_validate(model, X, y, cv=cv, scoring=scoring, **kwargs)
+    results = cross_validate_custom(model, X, y, cv=cv, scoring=scoring)
     print(results)
     for key in scoring:
         scores = results[f"test_{key}"]
@@ -107,15 +107,14 @@ def cross_validate_custom(model, X, y, cv, scoring):
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
         model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
         for key in scoring:
             scoring_arr = scores[f"test_{key}"]
             scorer = scoring[key]
             if scorer in get_scorer_names():
                 scorer_func = get_scorer(scorer)
-                score = scorer_func(y_test, y_pred)
+                score = scorer_func(model, X_test, y_test)
             else:
-                score = scorer(y_test, y_pred)
+                score = scorer(model, X_test, y_test)
             scoring_arr[i] = score
 
     return scores
