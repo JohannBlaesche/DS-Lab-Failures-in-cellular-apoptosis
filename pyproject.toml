@@ -18,7 +18,9 @@ dependencies = [
     "seaborn>=0.13.2",
     "click>=8.1.7",
     "category_encoders>=2.6.3",
-    "loguru>=0.7.2"
+    "loguru>=0.7.2",
+    "shap>=0.45.1",
+    "lightgbm>=4.3.0"
 ]
 
 [tool.setuptools_scm]

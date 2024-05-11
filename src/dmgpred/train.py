@@ -14,7 +14,7 @@ def get_preprocessor(X: pd.DataFrame):
     """Return the preprocessor for the pipeline."""
     normalizer = get_normalization_pipeline()
     encoder = get_encoder(X)
-    selector = SelectKBest(k=15, score_func=mutual_info_classif)
+    selector = SelectKBest(k=20, score_func=mutual_info_classif)
     return Pipeline(
         [
             ("normalizer", normalizer),
