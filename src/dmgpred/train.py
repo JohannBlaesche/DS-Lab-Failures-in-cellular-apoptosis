@@ -1,8 +1,8 @@
 """Training step in the pipeline."""
 
 import pandas as pd
+from lightgbm import LGBMClassifier
 from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
 from sklearn.pipeline import Pipeline
 
@@ -45,7 +45,9 @@ def train(X_train: pd.DataFrame, y_train: pd.DataFrame):
     This model is used to predict the damage grade of the test data.
     A seperate evaluation is done using cross-validation.
     """
-    clf = RandomForestClassifier(n_estimators=50, max_depth=3)
+    # clf = RandomForestClassifier(n_estimators=50, max_depth=3)
+    clf = LGBMClassifier(objective="multiclass")
+    # clf = LGBMOrdinal(random_state=42)
     pipe = get_pipeline(X_train, clf=clf)
     pipe.fit(X_train, y_train)
     return pipe
