@@ -56,6 +56,7 @@ def train(X_train: pd.DataFrame, y_train: pd.DataFrame):
         ],
         voting="soft",
     )
+
     pipe = get_pipeline(X_train, clf=clf)
     pipe.fit(X_train, y_train)
     return pipe
