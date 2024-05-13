@@ -3,9 +3,9 @@ name = "earthquake-damage-prediction"
 dynamic = ['version']
 description = "Earthquake damage prediction task 1"
 authors = [
-    {name = "Isabelle Konrad", email="uupor@student.kit.edu"},
-    {name = "Johann Bläsche", email="usqeb@student.kit.edu"},
-    {name = "Moritz Mistol", email="usort@student.kit.edu"},
+    { name = "Isabelle Konrad", email = "uupor@student.kit.edu" },
+    { name = "Johann Bläsche", email = "usqeb@student.kit.edu" },
+    { name = "Moritz Mistol", email = "usort@student.kit.edu" },
 ]
 requires-python = ">=3.10"
 readme = "README.md"
@@ -20,7 +20,9 @@ dependencies = [
     "category_encoders>=2.6.3",
     "loguru>=0.7.2",
     "shap>=0.45.1",
-    "lightgbm>=4.3.0"
+    "lightgbm>=4.3.0",
+    "imbalanced-learn>=0.12.2",
+    "xgboost>=2.0.3",
 ]
 
 [tool.setuptools_scm]
@@ -29,13 +31,7 @@ dependencies = [
 dmgpred = "dmgpred.__main__:main"
 
 [project.optional-dependencies]
-dev = [
-    "pytest",
-    "pre-commit",
-    "pdoc",
-    "jupyter",
-    "ruff",
-]
+dev = ["pytest", "pre-commit", "pdoc", "jupyter", "ruff"]
 
 [tool.ruff]
 line-length = 88
