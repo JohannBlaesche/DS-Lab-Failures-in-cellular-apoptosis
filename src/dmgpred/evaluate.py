@@ -1,5 +1,7 @@
 """Evaluation step in the pipeline."""
 
+import time
+
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
@@ -107,6 +109,7 @@ def cross_validate_custom(model, X, y, cv, scoring):
     for key in scoring:
         scores[f"test_{key}"] = np.zeros(cv.n_splits)
     for i, (train_index, test_index) in enumerate(cv.split(X, y)):
+        start = time.perf_counter()
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
         model.fit(X_train, y_train)
@@ -119,6 +122,8 @@ def cross_validate_custom(model, X, y, cv, scoring):
             else:
                 score = scorer(model, X_test, y_test)
             scoring_arr[i] = score
+        end = time.perf_counter()
+        logger.info(f"Split {i} trained in{end - start: .2f} seconds.")
 
     return scores
 
