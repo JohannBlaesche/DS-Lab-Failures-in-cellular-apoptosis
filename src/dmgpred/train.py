@@ -1,10 +1,13 @@
 """Training step in the pipeline."""
 
 import pandas as pd
+from lightgbm import LGBMClassifier
 from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import VotingClassifier
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
+from xgboost import XGBClassifier
 
 from dmgpred.cleaning import get_normalization_pipeline
 from dmgpred.featurize import get_encoder
@@ -14,7 +17,7 @@ def get_preprocessor(X: pd.DataFrame):
     """Return the preprocessor for the pipeline."""
     normalizer = get_normalization_pipeline()
     encoder = get_encoder(X)
-    selector = SelectKBest(k=15, score_func=mutual_info_classif)
+    selector = SelectKBest(k=20, score_func=mutual_info_classif)
     return Pipeline(
         [
             ("normalizer", normalizer),
@@ -45,7 +48,14 @@ def train(X_train: pd.DataFrame, y_train: pd.DataFrame):
     This model is used to predict the damage grade of the test data.
     A seperate evaluation is done using cross-validation.
     """
-    clf = RandomForestClassifier(n_estimators=50, max_depth=3)
+    clf = VotingClassifier(
+        estimators=[
+            ("xgb", XGBClassifier()),
+            ("lgbm", LGBMClassifier()),
+            ("knn", KNeighborsClassifier()),
+        ],
+        voting="soft",
+    )
     pipe = get_pipeline(X_train, clf=clf)
     pipe.fit(X_train, y_train)
     return pipe
