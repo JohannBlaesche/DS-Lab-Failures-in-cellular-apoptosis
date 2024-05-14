@@ -59,12 +59,17 @@ def train(X_train: pd.DataFrame, y_train: pd.DataFrame):
                     n_estimators=500,
                     tree_method="hist",
                     device="cuda",
+                    colsample_bytree=0.7,
                 ),
             ),
             (
                 "catboost",
                 CatBoostClassifier(
-                    n_estimators=1000, cat_features=cat_features, task_type="GPU"
+                    n_estimators=750,
+                    cat_features=cat_features,
+                    task_type="GPU",
+                    bagging_temperature=1,
+                    auto_class_weights="Balanced",
                 ),
             ),
         ],
