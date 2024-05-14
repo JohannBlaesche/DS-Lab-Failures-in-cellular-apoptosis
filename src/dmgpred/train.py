@@ -6,6 +6,7 @@ from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import VotingClassifier
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
 from sklearn.pipeline import Pipeline
+from xgboost import XGBClassifier
 
 from dmgpred.cleaning import get_normalization_pipeline
 from dmgpred.featurize import get_encoder
@@ -52,8 +53,19 @@ def train(X_train: pd.DataFrame, y_train: pd.DataFrame):
     clf = VotingClassifier(
         estimators=[
             (
+                "xgb",
+                XGBClassifier(
+                    enable_categorical=True,
+                    n_estimators=500,
+                    tree_method="hist",
+                    device="cuda",
+                ),
+            ),
+            (
                 "catboost",
-                CatBoostClassifier(n_estimators=500, cat_features=cat_features),
+                CatBoostClassifier(
+                    n_estimators=1000, cat_features=cat_features, task_type="GPU"
+                ),
             ),
         ],
         voting="soft",
