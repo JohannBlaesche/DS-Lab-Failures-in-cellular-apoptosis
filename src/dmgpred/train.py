@@ -1,13 +1,11 @@
 """Training step in the pipeline."""
 
 import pandas as pd
-from lightgbm import LGBMClassifier
+from catboost import CatBoostClassifier
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import VotingClassifier
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
-from xgboost import XGBClassifier
 
 from dmgpred.cleaning import get_normalization_pipeline
 from dmgpred.featurize import get_encoder
@@ -16,13 +14,13 @@ from dmgpred.featurize import get_encoder
 def get_preprocessor(X: pd.DataFrame):
     """Return the preprocessor for the pipeline."""
     normalizer = get_normalization_pipeline()
-    encoder = get_encoder(X)
-    selector = SelectKBest(k=20, score_func=mutual_info_classif)
+    encoder = get_encoder(X)  # noqa: F841
+    selector = SelectKBest(k=20, score_func=mutual_info_classif)  # noqa: F841
     return Pipeline(
         [
             ("normalizer", normalizer),
-            ("encoder", encoder),
-            ("selector", selector),
+            # ("encoder", encoder),
+            # ("selector", selector),
         ],
         verbose=False,
     )
@@ -48,11 +46,15 @@ def train(X_train: pd.DataFrame, y_train: pd.DataFrame):
     This model is used to predict the damage grade of the test data.
     A seperate evaluation is done using cross-validation.
     """
+    cat_features = X_train.select_dtypes(
+        include=["object", "category"]
+    ).columns.tolist()
     clf = VotingClassifier(
         estimators=[
-            ("xgb", XGBClassifier()),
-            ("lgbm", LGBMClassifier()),
-            ("knn", KNeighborsClassifier()),
+            (
+                "catboost",
+                CatBoostClassifier(n_estimators=500, cat_features=cat_features),
+            ),
         ],
         voting="soft",
     )
