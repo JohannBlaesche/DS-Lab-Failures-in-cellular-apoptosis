@@ -1,41 +1,27 @@
 """Training step in the pipeline."""
 
 import pandas as pd
+from imblearn.pipeline import Pipeline
 from lightgbm import LGBMClassifier
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import VotingClassifier
-from sklearn.feature_selection import SelectKBest, mutual_info_classif
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
 
-from dmgpred.cleaning import get_normalization_pipeline
+from dmgpred.cleaning import get_normalizer
 from dmgpred.featurize import get_encoder
-
-
-def get_preprocessor(X: pd.DataFrame):
-    """Return the preprocessor for the pipeline."""
-    normalizer = get_normalization_pipeline()
-    encoder = get_encoder(X)
-    selector = SelectKBest(k=20, score_func=mutual_info_classif)
-    return Pipeline(
-        [
-            ("normalizer", normalizer),
-            ("encoder", encoder),
-            ("selector", selector),
-        ],
-        verbose=False,
-    )
 
 
 def get_pipeline(X: pd.DataFrame, clf=None):
     """Return the training pipeline."""
     if clf is None:
         clf = DummyClassifier(strategy="most_frequent")
-    preprocessor = get_preprocessor(X)
+    normalizer = get_normalizer()
+    encoder = get_encoder(X)
     return Pipeline(
         [
-            ("preprocessor", preprocessor),
+            ("normalizer", normalizer),
+            ("encoder", encoder),
             ("clf", clf),
         ],
         verbose=False,
