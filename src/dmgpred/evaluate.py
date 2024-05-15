@@ -74,7 +74,7 @@ def evaluate(
         logger.success(f"{key}: {scores.mean(): .4f} (± {scores.std(): .2f})")
         if train_scores:
             scores = results[f"train_{key}"]
-        logger.success(f"Train {key}: {scores.mean(): .4f} (± {scores.std(): .2f})")
+            logger.success(f"Train {key}: {scores.mean(): .4f} (± {scores.std(): .2f})")
 
     return results
 
