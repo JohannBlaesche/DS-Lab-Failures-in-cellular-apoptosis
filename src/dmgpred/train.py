@@ -5,7 +5,6 @@ from catboost import CatBoostClassifier
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import VotingClassifier
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
 
@@ -42,12 +41,8 @@ def get_pipeline(X: pd.DataFrame, clf=None):
     )
 
 
-def train(X_train: pd.DataFrame, y_train: pd.DataFrame, use_gpu=False):
-    """Train the model on the full dataset.
-
-    This model is used to predict the damage grade of the test data.
-    A seperate evaluation is done using cross-validation.
-    """
+def get_classifier(X_train: pd.DataFrame, use_gpu=False):
+    """Return the classifier used in the pipeline."""
     cat_features = X_train.select_dtypes(
         include=["object", "category"]
     ).columns.tolist()
@@ -59,7 +54,7 @@ def train(X_train: pd.DataFrame, y_train: pd.DataFrame, use_gpu=False):
         task_type = "CPU"
         device = "cpu"
 
-    clf = VotingClassifier(
+    return VotingClassifier(
         estimators=[
             (
                 "xgb",
@@ -77,12 +72,21 @@ def train(X_train: pd.DataFrame, y_train: pd.DataFrame, use_gpu=False):
                     cat_features=cat_features,
                     task_type=task_type,
                     auto_class_weights="Balanced",
+                    verbose=False,
                 ),
             ),
-            ("knn", KNeighborsClassifier()),
         ],
         voting="soft",
     )
+
+
+def train(X_train: pd.DataFrame, y_train: pd.DataFrame, use_gpu=False):
+    """Train the model on the full dataset.
+
+    This model is used to predict the damage grade of the test data.
+    A seperate evaluation is done using cross-validation.
+    """
+    clf = get_classifier(X_train, use_gpu=use_gpu)
     pipe = get_pipeline(X_train, clf=clf)
     pipe.fit(X_train, y_train)
     return pipe
