@@ -1,6 +1,7 @@
 """Featurization step in the pipeline."""
 
 import pandas as pd
+import sklearn
 from category_encoders.target_encoder import TargetEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OrdinalEncoder
@@ -52,6 +53,8 @@ def get_encoder(X: pd.DataFrame):
     nominal_cols = X.select_dtypes(include=["category", "object"]).columns
     ordinal_cols = ["count_families"]
     nominal_cols = nominal_cols.difference(ordinal_cols)
+    geo_level_cols = X[[col for col in X.columns if "geo_level" in col]].columns
+    # geo_level_cats = [X[col].unique() for col in geo_level_cols]
     return ColumnTransformer(
         transformers=[
             (
@@ -60,6 +63,7 @@ def get_encoder(X: pd.DataFrame):
                 nominal_cols,
             ),
             ("ordinal", OrdinalEncoder(), ordinal_cols),
+            ("geo_level", sklearn.preprocessing.TargetEncoder(), geo_level_cols),
         ],
         remainder="passthrough",
         verbose_feature_names_out=False,
