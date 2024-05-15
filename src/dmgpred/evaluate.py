@@ -123,21 +123,16 @@ def cross_validate_custom(model, X, y, cv, scoring, train_scores=False):
         model.fit(X_train, y_train)
         for key in scoring:
             scoring_arr = scores[f"test_{key}"]
-            if train_scores:
-                scoring_arr_train = scores[f"train_{key}"]
             scorer = scoring[key]
             if scorer in get_scorer_names():
-                scorer_func = get_scorer(scorer)
-                score = scorer_func(model, X_test, y_test)
-                if train_scores:
-                    score_train = scorer_func(model, X_train, y_train)
-            else:
-                score = scorer(model, X_test, y_test)
-                if train_scores:
-                    score_train = scorer(model, X_train, y_train)
+                scorer = get_scorer(scorer)
+            score = scorer(model, X_test, y_test)
             scoring_arr[i] = score
             if train_scores:
+                scoring_arr_train = scores[f"train_{key}"]
+                score_train = scorer(model, X_train, y_train)
                 scoring_arr_train[i] = score_train
+
         end = time.perf_counter()
         logger.info(f"Split {i} trained in{end - start: .2f} seconds.")
 
