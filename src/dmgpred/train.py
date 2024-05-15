@@ -16,11 +16,11 @@ def get_pipeline(X: pd.DataFrame, clf=None):
     if clf is None:
         clf = DummyClassifier(strategy="most_frequent")
     normalizer = get_normalizer()
-    encoder = get_encoder(X)
+    encoder = get_encoder(X)  # noqa: F841
     return Pipeline(
         [
             ("normalizer", normalizer),
-            ("encoder", encoder),
+            # ("encoder", encoder),
             ("clf", clf),
         ],
         verbose=False,
