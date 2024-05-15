@@ -1,10 +1,18 @@
 """Evaluation step in the pipeline."""
 
+import time
+
+import numpy as np
 import pandas as pd
 from loguru import logger
 from sklearn.base import BaseEstimator
-from sklearn.metrics import make_scorer, matthews_corrcoef
-from sklearn.model_selection import StratifiedKFold, cross_validate
+from sklearn.metrics import (
+    get_scorer,
+    get_scorer_names,
+    make_scorer,
+    matthews_corrcoef,
+)
+from sklearn.model_selection import StratifiedKFold
 
 
 def evaluate(
@@ -57,11 +65,71 @@ def evaluate(
         "MCC": make_scorer(matthews_corrcoef, greater_is_better=True),
         **additional_scoring,
     }
-
-    results = cross_validate(model, X, y, cv=cv, scoring=scoring, **kwargs)
-
+    train_scores = True
+    results = cross_validate_custom(
+        model, X, y, cv=cv, scoring=scoring, train_scores=train_scores
+    )
     for key in scoring:
         scores = results[f"test_{key}"]
         logger.success(f"{key}: {scores.mean(): .4f} (± {scores.std(): .2f})")
+        if train_scores:
+            scores = results[f"train_{key}"]
+        logger.success(f"Train {key}: {scores.mean(): .4f} (± {scores.std(): .2f})")
 
     return results
+
+
+def cross_validate_custom(model, X, y, cv, scoring, train_scores=False):
+    """
+    Perform cross-validation with given scoring metrics.
+
+    Parameters
+    ----------
+    model : scikit-learn like model with fit and predict methods.
+        The model to evaluate.
+    X : pd.DataFrame
+        Features.
+    y : pd.Series
+        Labels.
+    cv : cross-validation generator
+        A cross-validation iterator with `split` method.
+    scoring : dict
+        A dictionary where keys are strings representing scoring metric names and values
+        are either strings representing predefined scorer names in scikit-learn's
+        'metrics' module or scorer functions.
+
+    Returns
+    -------
+    scores : dict
+        A dictionary containing the scores for each fold and each scoring metric.
+        Keys are strings in the format 'test_<scoring_metric>', where <scoring_metric>
+        is the name of the scoring metric. Values are arrays of shape (n_splits,)
+        containing the scores for each fold.
+    """
+    scores = dict()
+    for key in scoring:
+        scores[f"test_{key}"] = np.zeros(cv.n_splits)
+        if train_scores:
+            scores[f"train_{key}"] = np.zeros(cv.n_splits)
+
+    for i, (train_index, test_index) in enumerate(cv.split(X, y)):
+        start = time.perf_counter()
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+        model.fit(X_train, y_train)
+        for key in scoring:
+            scoring_arr = scores[f"test_{key}"]
+            scorer = scoring[key]
+            if scorer in get_scorer_names():
+                scorer = get_scorer(scorer)
+            score = scorer(model, X_test, y_test)
+            scoring_arr[i] = score
+            if train_scores:
+                scoring_arr_train = scores[f"train_{key}"]
+                score_train = scorer(model, X_train, y_train)
+                scoring_arr_train[i] = score_train
+
+        end = time.perf_counter()
+        logger.info(f"Split {i} trained in{end - start: .2f} seconds.")
+
+    return scores
