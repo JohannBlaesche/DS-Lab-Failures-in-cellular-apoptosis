@@ -27,7 +27,7 @@ def get_pipeline(X: pd.DataFrame, clf=None):
     )
 
 
-def get_classifier(X_train: pd.DataFrame, use_gpu=False):
+def get_classifier(X_train: pd.DataFrame, use_gpu=True):
     """Return the classifier used in the pipeline."""
     cat_features = X_train.select_dtypes(
         include=["object", "category"]
@@ -66,7 +66,7 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=False):
     )
 
 
-def train(X_train: pd.DataFrame, y_train: pd.DataFrame, use_gpu=False):
+def train(X_train: pd.DataFrame, y_train: pd.DataFrame, use_gpu=True):
     """Train the model on the full dataset.
 
     This model is used to predict the damage grade of the test data.

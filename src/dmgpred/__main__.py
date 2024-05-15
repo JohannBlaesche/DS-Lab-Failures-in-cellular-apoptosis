@@ -45,7 +45,7 @@ TARGET = "damage_grade"
     ),
 )
 @click.option(
-    "--use-gpu", default=False, is_flag=True, help="Use GPU for training if supported."
+    "--use-gpu", default=True, is_flag=True, help="Use GPU for training if supported."
 )
 def main(add_metrics, n_folds, log_level, use_gpu):
     """Run the Damage Prediction Pipeline.
