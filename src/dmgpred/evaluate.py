@@ -69,16 +69,21 @@ def evaluate(
         "MCC": make_scorer(matthews_corrcoef, greater_is_better=True),
         **additional_scoring,
     }
-
-    results = cross_validate_custom(model, X, y, cv=cv, scoring=scoring)
+    train_scores = True
+    results = cross_validate_custom(
+        model, X, y, cv=cv, scoring=scoring, train_scores=train_scores
+    )
     for key in scoring:
         scores = results[f"test_{key}"]
         logger.success(f"{key}: {scores.mean(): .4f} (± {scores.std(): .2f})")
+        if train_scores:
+            scores = results[f"train_{key}"]
+        logger.success(f"Train {key}: {scores.mean(): .4f} (± {scores.std(): .2f})")
 
     return results
 
 
-def cross_validate_custom(model, X, y, cv, scoring):
+def cross_validate_custom(model, X, y, cv, scoring, train_scores=False):
     """
     Perform cross-validation with given scoring metrics.
 
@@ -108,6 +113,9 @@ def cross_validate_custom(model, X, y, cv, scoring):
     scores = dict()
     for key in scoring:
         scores[f"test_{key}"] = np.zeros(cv.n_splits)
+        if train_scores:
+            scores[f"train_{key}"] = np.zeros(cv.n_splits)
+
     for i, (train_index, test_index) in enumerate(cv.split(X, y)):
         start = time.perf_counter()
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
@@ -115,13 +123,21 @@ def cross_validate_custom(model, X, y, cv, scoring):
         model.fit(X_train, y_train)
         for key in scoring:
             scoring_arr = scores[f"test_{key}"]
+            if train_scores:
+                scoring_arr_train = scores[f"train_{key}"]
             scorer = scoring[key]
             if scorer in get_scorer_names():
                 scorer_func = get_scorer(scorer)
                 score = scorer_func(model, X_test, y_test)
+                if train_scores:
+                    score_train = scorer_func(model, X_train, y_train)
             else:
                 score = scorer(model, X_test, y_test)
+                if train_scores:
+                    score_train = scorer(model, X_train, y_train)
             scoring_arr[i] = score
+            if train_scores:
+                scoring_arr_train[i] = score_train
         end = time.perf_counter()
         logger.info(f"Split {i} trained in{end - start: .2f} seconds.")
 
