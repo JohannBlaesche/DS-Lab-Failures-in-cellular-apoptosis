@@ -49,7 +49,7 @@ def clean_single(X: pd.DataFrame) -> pd.DataFrame:
     return X
 
 
-def get_normalization_pipeline():
+def get_normalizer():
     """Get the normalization pipeline."""
     normalizer = ColumnTransformer(
         transformers=[

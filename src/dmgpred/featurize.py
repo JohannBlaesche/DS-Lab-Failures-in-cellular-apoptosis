@@ -1,7 +1,7 @@
 """Featurization step in the pipeline."""
 
 import pandas as pd
-from category_encoders.james_stein import JamesSteinEncoder
+from category_encoders.target_encoder import TargetEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OrdinalEncoder
 
@@ -56,7 +56,7 @@ def get_encoder(X: pd.DataFrame):
         transformers=[
             (
                 "nominal",
-                JamesSteinEncoder(),
+                TargetEncoder(),
                 nominal_cols,
             ),
             ("ordinal", OrdinalEncoder(), ordinal_cols),
