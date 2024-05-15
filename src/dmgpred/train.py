@@ -5,7 +5,9 @@ from catboost import CatBoostClassifier
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import VotingClassifier
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
+from xgboost import XGBClassifier
 
 from dmgpred.cleaning import get_normalization_pipeline
 from dmgpred.featurize import get_encoder
@@ -40,7 +42,7 @@ def get_pipeline(X: pd.DataFrame, clf=None):
     )
 
 
-def train(X_train: pd.DataFrame, y_train: pd.DataFrame):
+def train(X_train: pd.DataFrame, y_train: pd.DataFrame, use_gpu=False):
     """Train the model on the full dataset.
 
     This model is used to predict the damage grade of the test data.
@@ -49,27 +51,35 @@ def train(X_train: pd.DataFrame, y_train: pd.DataFrame):
     cat_features = X_train.select_dtypes(
         include=["object", "category"]
     ).columns.tolist()
+
+    if use_gpu:
+        task_type = "GPU"
+        device = "cuda"
+    else:
+        task_type = "CPU"
+        device = "cpu"
+
     clf = VotingClassifier(
         estimators=[
-            # (
-            #     "xgb",
-            #     XGBClassifier(
-            #         enable_categorical=True,
-            #         n_estimators=500,
-            #         tree_method="hist",
-            #         device="cuda",
-            #         colsample_bytree=0.7,
-            #     ),
-            # ),
+            (
+                "xgb",
+                XGBClassifier(
+                    enable_categorical=True,
+                    n_estimators=500,
+                    tree_method="hist",
+                    device=device,
+                ),
+            ),
             (
                 "catboost",
                 CatBoostClassifier(
-                    n_estimators=1500,
+                    n_estimators=1000,
                     cat_features=cat_features,
-                    task_type="GPU",
+                    task_type=task_type,
                     auto_class_weights="Balanced",
                 ),
             ),
+            ("knn", KNeighborsClassifier()),
         ],
         voting="soft",
     )
