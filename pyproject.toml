@@ -21,6 +21,7 @@ dependencies = [
     "loguru>=0.7.2",
     "shap>=0.45.1",
     "lightgbm>=4.3.0",
+    "catboost>=1.2.5",
     "imbalanced-learn>=0.12.2",
     "xgboost>=2.0.3",
 ]

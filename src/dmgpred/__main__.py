@@ -44,7 +44,10 @@ TARGET = "damage_grade"
         ["debug", "info", "success", "warning", "error"], case_sensitive=False
     ),
 )
-def main(add_metrics, n_folds, log_level):
+@click.option(
+    "--use-gpu", default=False, is_flag=True, help="Use GPU for training if supported."
+)
+def main(add_metrics, n_folds, log_level, use_gpu):
     """Run the Damage Prediction Pipeline.
 
     This pipeline consists of four steps, namely cleaning, featurization,
@@ -75,7 +78,7 @@ def main(add_metrics, n_folds, log_level):
     X_train, X_test = featurize(X_train, X_test)
 
     logger.info("Training the model on full dataset...")
-    model = train(X_train, y_train)
+    model = train(X_train, y_train, use_gpu=use_gpu)
     dump(model, f"{OUTPUT_PATH}/trained_model.pkl")
     logger.info(f"Model saved to {OUTPUT_PATH}/trained_model.pkl")
     y_pred = model.predict(X_test)
@@ -90,7 +93,7 @@ def main(add_metrics, n_folds, log_level):
         y_train,
         n_folds=n_folds,
         additional_scoring=add_metrics,
-        n_jobs=-1,
+        n_jobs=1,
     )
 
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
