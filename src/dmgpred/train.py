@@ -17,7 +17,7 @@ def get_pipeline(X: pd.DataFrame, clf=None):
     if clf is None:
         clf = DummyClassifier(strategy="most_frequent")
     normalizer = get_normalizer()
-    encoder = get_encoder(X)  # noqa: F841
+    encoder = get_encoder(X)
     return Pipeline(
         [
             ("normalizer", normalizer),
@@ -31,10 +31,6 @@ def get_pipeline(X: pd.DataFrame, clf=None):
 
 def get_classifier(X_train: pd.DataFrame, use_gpu=True):
     """Return the classifier used in the pipeline."""
-    cat_features = X_train.select_dtypes(  # noqa: F841
-        include=["object", "category"]
-    ).columns.tolist()
-
     if use_gpu:
         task_type = "GPU"
         device = "cuda"
@@ -57,9 +53,7 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
                 "catboost",
                 CatBoostClassifier(
                     n_estimators=1000,
-                    # cat_features=cat_features,
                     task_type=task_type,
-                    auto_class_weights="Balanced",
                     verbose=False,
                 ),
             ),
