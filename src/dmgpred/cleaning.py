@@ -2,6 +2,7 @@
 
 from typing import Literal
 
+import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import PowerTransformer
@@ -44,7 +45,7 @@ def clean_single(X: pd.DataFrame) -> pd.DataFrame:
     """
     X = handle_rare_categoricals(X)  # must be before dtype conversion
     X = remove_rare_binary_cols(X)
-    X = remove_columns(X, ["count_floors_pre_eq"])
+    X = remove_columns(X, ["count_floors_pre_eq", "has_secondary_use"])
     X = dtype_conversion(X)
     return X
 
@@ -71,13 +72,13 @@ def dtype_conversion(X: pd.DataFrame):
     """Convert columns types."""
     cat_cols = X.select_dtypes(include="object").columns
     binary_cols = [col for col in X.columns if col.startswith("has")]
-    geo_levels = [col for col in X.columns if col.startswith("geo_level")]
+    geo_levels = [col for col in X.columns if col.startswith("geo_level")]  # noqa: F841
 
     X[geo_levels] = X[geo_levels].astype("category")
     X[binary_cols] = X[binary_cols].astype(bool)
     X[cat_cols] = X[cat_cols].astype("category")
     X["count_families"] = pd.cut(
-        X["count_families"], [0, 1, 2, 10], right=False, labels=["0", "1", "2+"]
+        X["count_families"], [0, 1, 2, np.inf], right=False, labels=["0", "1", "2+"]
     )
 
     return X

@@ -3,6 +3,7 @@
 import pandas as pd
 from catboost import CatBoostClassifier
 from imblearn.pipeline import Pipeline
+from lightgbm import LGBMClassifier
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import VotingClassifier
 from xgboost import XGBClassifier
@@ -16,11 +17,11 @@ def get_pipeline(X: pd.DataFrame, clf=None):
     if clf is None:
         clf = DummyClassifier(strategy="most_frequent")
     normalizer = get_normalizer()
-    encoder = get_encoder(X)  # noqa: F841
+    encoder = get_encoder(X)
     return Pipeline(
         [
             ("normalizer", normalizer),
-            # ("encoder", encoder),
+            ("encoder", encoder),
             ("clf", clf),
         ],
         verbose=False,
@@ -29,16 +30,14 @@ def get_pipeline(X: pd.DataFrame, clf=None):
 
 def get_classifier(X_train: pd.DataFrame, use_gpu=True):
     """Return the classifier used in the pipeline."""
-    cat_features = X_train.select_dtypes(
-        include=["object", "category"]
-    ).columns.tolist()
-
     if use_gpu:
         task_type = "GPU"
         device = "cuda"
+        lgbm_device = "gpu"
     else:
         task_type = "CPU"
         device = "cpu"
+        lgbm_device = "cpu"
 
     return VotingClassifier(
         estimators=[
@@ -46,19 +45,29 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
                 "xgb",
                 XGBClassifier(
                     enable_categorical=True,
-                    n_estimators=500,
+                    n_estimators=1000,
                     tree_method="hist",
                     device=device,
+                    random_state=0,
                 ),
             ),
             (
                 "catboost",
                 CatBoostClassifier(
                     n_estimators=1000,
-                    cat_features=cat_features,
                     task_type=task_type,
-                    auto_class_weights="Balanced",
                     verbose=False,
+                    random_state=0,
+                ),
+            ),
+            (
+                "lgbm",
+                LGBMClassifier(
+                    n_estimators=1000,
+                    random_state=0,
+                    class_weight="balanced",
+                    device=lgbm_device,
+                    verbose=0,
                 ),
             ),
         ],
