@@ -51,14 +51,13 @@ def get_encoder(X: pd.DataFrame):
     nominal_cols = X.select_dtypes(include=["category", "object"]).columns
     ordinal_cols = ["count_families"]
     nominal_cols = nominal_cols.difference(ordinal_cols)
-
     geo_levels = [col for col in X.columns if "geo_level" in col]
     nominal_cols = nominal_cols.difference(geo_levels)
     return ColumnTransformer(
         transformers=[
             (
                 "nominal",
-                TargetEncoder(target_type="multiclass"),
+                OrdinalEncoder(),
                 nominal_cols,
             ),
             ("ordinal", OrdinalEncoder(), ordinal_cols),

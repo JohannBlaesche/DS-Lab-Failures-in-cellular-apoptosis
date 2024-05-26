@@ -2,8 +2,8 @@
 
 import pandas as pd
 from catboost import CatBoostClassifier
-from imblearn.combine import SMOTETomek
 from imblearn.pipeline import Pipeline
+from lightgbm import LGBMClassifier
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import VotingClassifier
 from xgboost import XGBClassifier
@@ -22,7 +22,6 @@ def get_pipeline(X: pd.DataFrame, clf=None):
         [
             ("normalizer", normalizer),
             ("encoder", encoder),
-            ("sampler", SMOTETomek()),
             ("clf", clf),
         ],
         verbose=False,
@@ -34,9 +33,11 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
     if use_gpu:
         task_type = "GPU"
         device = "cuda"
+        lgbm_device = "gpu"
     else:
         task_type = "CPU"
         device = "cpu"
+        lgbm_device = "cpu"
 
     return VotingClassifier(
         estimators=[
@@ -47,6 +48,7 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
                     n_estimators=1000,
                     tree_method="hist",
                     device=device,
+                    random_state=0,
                 ),
             ),
             (
@@ -55,6 +57,17 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
                     n_estimators=1000,
                     task_type=task_type,
                     verbose=False,
+                    random_state=0,
+                ),
+            ),
+            (
+                "lgbm",
+                LGBMClassifier(
+                    n_estimators=1000,
+                    random_state=0,
+                    class_weight="balanced",
+                    device=lgbm_device,
+                    verbose=0,
                 ),
             ),
         ],

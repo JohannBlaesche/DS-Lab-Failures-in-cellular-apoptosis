@@ -99,7 +99,6 @@ def main(add_metrics, n_folds, log_level, use_gpu):
         y_train,
         n_folds=n_folds,
         additional_scoring=add_metrics,
-        n_jobs=1,
     )
 
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
