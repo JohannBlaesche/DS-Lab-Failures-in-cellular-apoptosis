@@ -21,7 +21,7 @@ def evaluate(
     y: pd.Series,
     n_folds: int = 5,
     additional_scoring: dict | None = None,
-    **kwargs,
+    train_scores=True,
 ) -> float:
     """Evaluate the model using cross-validation.
 
@@ -65,7 +65,6 @@ def evaluate(
         "MCC": make_scorer(matthews_corrcoef, greater_is_better=True),
         **additional_scoring,
     }
-    train_scores = True
     results = cross_validate_custom(
         model, X, y, cv=cv, scoring=scoring, train_scores=train_scores
     )
@@ -107,6 +106,7 @@ def cross_validate_custom(model, X, y, cv, scoring, train_scores=False):
         containing the scores for each fold.
     """
     scores = dict()
+    scoring = _check_scoring(scoring)
     for key in scoring:
         scores[f"test_{key}"] = np.zeros(cv.n_splits)
         if train_scores:
@@ -117,19 +117,32 @@ def cross_validate_custom(model, X, y, cv, scoring, train_scores=False):
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
         model.fit(X_train, y_train)
-        for key in scoring:
-            scoring_arr = scores[f"test_{key}"]
-            scorer = scoring[key]
-            if scorer in get_scorer_names():
-                scorer = get_scorer(scorer)
+
+        for key, scorer in scoring.items():
             score = scorer(model, X_test, y_test)
-            scoring_arr[i] = score
+            scores[f"test_{key}"][i] = score
             if train_scores:
-                scoring_arr_train = scores[f"train_{key}"]
                 score_train = scorer(model, X_train, y_train)
-                scoring_arr_train[i] = score_train
+                scores[f"train_{key}"][i] = score_train
 
         end = time.perf_counter()
-        logger.info(f"Split {i} trained in{end - start: .2f} seconds.")
+        logger.info(
+            f"MCC in Fold {i+1}: {scores['test_MCC'][i]:.4f} (took {end - start:.2f} seconds)"  # noqa: E501
+        )
 
     return scores
+
+
+def _check_scoring(scoring: dict) -> dict:
+    """Check the scoring dict and return a dict with valid scorers."""
+    scoring_ = scoring.copy()
+    valid_scorers = get_scorer_names()
+    for key, value in scoring.items():
+        if callable(value):
+            continue
+        elif isinstance(value, str):
+            if value not in valid_scorers:
+                raise ValueError(f"Scorer {value} is not a valid scorer.")
+            else:
+                scoring_[key] = get_scorer(value)
+    return scoring_
