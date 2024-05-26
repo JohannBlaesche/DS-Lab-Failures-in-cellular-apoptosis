@@ -2,7 +2,7 @@
 
 import pandas as pd
 import sklearn
-from category_encoders.target_encoder import TargetEncoder
+from category_encoders import TargetEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OrdinalEncoder
 
@@ -44,6 +44,14 @@ def featurize_single(X: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         DataFrame with featurization applied.
     """
+    X = add_geo_level_agg(X)
+    return X
+
+
+def add_geo_level_agg(X: pd.DataFrame) -> pd.DataFrame:
+    """Add a new column 'geo_level_sum' to the dataframe."""
+    geo_level_cols = [col for col in X.columns if "geo_level" in col]
+    X["geo_level_sum"] = X[geo_level_cols].sum(axis=1)
     return X
 
 
@@ -54,7 +62,8 @@ def get_encoder(X: pd.DataFrame):
     ordinal_cols = ["count_families"]
     nominal_cols = nominal_cols.difference(ordinal_cols)
     geo_level_cols = X[[col for col in X.columns if "geo_level" in col]].columns
-    # geo_level_cats = [X[col].unique() for col in geo_level_cols]
+    geo_levels = [col for col in X.columns if "geo_level" in col]
+    nominal_cols = nominal_cols.difference(geo_levels)
     return ColumnTransformer(
         transformers=[
             (
@@ -63,7 +72,11 @@ def get_encoder(X: pd.DataFrame):
                 nominal_cols,
             ),
             ("ordinal", OrdinalEncoder(), ordinal_cols),
-            ("geo_level", sklearn.preprocessing.TargetEncoder(), geo_level_cols),
+            (
+                "geo_level",
+                sklearn.preprocessing.TargetEncoder(target_type="multiclass"),
+                geo_level_cols,
+            ),
         ],
         remainder="passthrough",
         verbose_feature_names_out=False,
