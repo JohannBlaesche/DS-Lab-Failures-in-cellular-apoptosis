@@ -2,7 +2,7 @@
 
 import pandas as pd
 from catboost import CatBoostClassifier
-from imblearn.over_sampling import SMOTE
+from imblearn.combine import SMOTETomek
 from imblearn.pipeline import Pipeline
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import VotingClassifier
@@ -22,7 +22,7 @@ def get_pipeline(X: pd.DataFrame, clf=None):
         [
             ("normalizer", normalizer),
             ("encoder", encoder),
-            ("oversampler", SMOTE()),
+            ("sampler", SMOTETomek()),
             ("clf", clf),
         ],
         verbose=False,
