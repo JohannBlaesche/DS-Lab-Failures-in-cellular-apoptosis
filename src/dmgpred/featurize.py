@@ -1,9 +1,8 @@
 """Featurization step in the pipeline."""
 
 import pandas as pd
-from category_encoders import TargetEncoder
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OrdinalEncoder
+from sklearn.preprocessing import OrdinalEncoder, TargetEncoder
 
 
 def featurize(*dataframes):
@@ -57,13 +56,17 @@ def get_encoder(X: pd.DataFrame):
     nominal_cols = nominal_cols.difference(geo_levels)
     return ColumnTransformer(
         transformers=[
-            ("geo_levels", TargetEncoder(), geo_levels),
             (
                 "nominal",
-                OrdinalEncoder(),
+                TargetEncoder(target_type="multiclass"),
                 nominal_cols,
             ),
             ("ordinal", OrdinalEncoder(), ordinal_cols),
+            (
+                "geo_level",
+                TargetEncoder(target_type="multiclass"),
+                geo_levels,
+            ),
         ],
         remainder="passthrough",
         verbose_feature_names_out=False,
