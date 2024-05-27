@@ -33,7 +33,7 @@ def tune(X, y, n_trials=100, random_state=0):
             "learning_rate": trial.suggest_float("learning_rate", 1e-4, 1e-1, log=True),
             "num_leaves": trial.suggest_int("num_leaves", 10, 300, step=10),
             "max_depth": trial.suggest_int("max_depth", 3, 9),
-            # "min_split_gain": trial.suggest_float("min_split_gain", 0, 5),
+            "min_split_gain": trial.suggest_float("min_split_gain", 0, 5),
         }
         clf = LGBMClassifier(**param_space)
         model = get_pipeline(X_train, clf)
@@ -45,7 +45,7 @@ def tune(X, y, n_trials=100, random_state=0):
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     study = optuna.create_study(study_name="optimize_lgbm", direction="maximize")
     logger.info(f"Starting Hyperparameter Optimization with {n_trials} trials...")
-    study.optimize(objective, n_trials=n_trials)
+    study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
 
     best_params = study.best_params
     logger.info(f"Study completed with best score: {study.best_value}")

@@ -70,10 +70,10 @@ def evaluate(
     )
     for key in scoring:
         scores = results[f"test_{key}"]
-        logger.success(f"{key}: {scores.mean(): .4f} (± {scores.std(): .2f})")
+        logger.success(f"{key}: {scores.mean(): .4f} (± {scores.std(): .4f})")
         if train_scores:
             scores = results[f"train_{key}"]
-            logger.success(f"Train {key}: {scores.mean(): .4f} (± {scores.std(): .2f})")
+            logger.success(f"Train {key}: {scores.mean(): .4f} (± {scores.std(): .4f})")
 
     return results
 
