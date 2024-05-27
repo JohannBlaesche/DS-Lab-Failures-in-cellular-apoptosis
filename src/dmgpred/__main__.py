@@ -85,7 +85,7 @@ def main(add_metrics, n_folds, log_level, use_gpu):
     X_train, X_test = featurize(X_train, X_test)
 
     # run optimization
-    clf = tune(X_train, y_train, n_trials=10)
+    clf = tune(X_train, y_train, n_trials=250)
 
     logger.info("Training the model on full dataset...")
     model = train(X_train, y_train, use_gpu=use_gpu, clf=clf)

@@ -19,21 +19,26 @@ def tune(X, y, n_trials=100, random_state=0):
 
     def objective(trial):
         """Tune LGBM."""
+        max_depth = trial.suggest_int("max_depth", 6, 12)
+        num_leaves = trial.suggest_int("num_leaves", 50, 2**max_depth)
         param_space = {
-            "random_state": trial.suggest_categorical("random_state", [random_state]),
-            "is_unbalance": trial.suggest_categorical("is_unbalance", [True]),
-            "verbose": trial.suggest_categorical("verbose", [-1]),
-            "device": trial.suggest_categorical("device", ["gpu"]),
-            "n_estimators": trial.suggest_int("n_estimators", 800, 1800, step=50),
-            "subsample": trial.suggest_float("subsample", 0.2, 1.0),
-            "subsample_freq": trial.suggest_categorical("subsample_freq", [1]),
-            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.2, 1.0),
-            "reg_alpha": trial.suggest_float("reg_alpha", 1e-3, 10.0, log=True),
-            "reg_lambda": trial.suggest_float("reg_lambda", 1e-3, 10.0, log=True),
+            "objective": "multiclass",
+            "num_class": 3,
+            "class_weight": "balanced",
+            "random_state": random_state,
+            "verbose": -1,
+            "device": "gpu",
+            "subsample_freq": 1,
+            "num_leaves": num_leaves,
+            "max_depth": max_depth,
+            "n_estimators": trial.suggest_int("n_estimators", 1000, 1700),
+            "subsample": trial.suggest_float("subsample", 0.4, 0.8),
+            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.7, 1.0),
+            "reg_alpha": trial.suggest_float("reg_alpha", 1e-3, 2.0, log=True),
+            "reg_lambda": trial.suggest_float("reg_lambda", 1e-3, 2.0, log=True),
             "learning_rate": trial.suggest_float("learning_rate", 1e-4, 1e-1, log=True),
-            "num_leaves": trial.suggest_int("num_leaves", 10, 300, step=10),
-            "max_depth": trial.suggest_int("max_depth", 3, 9),
-            "min_split_gain": trial.suggest_float("min_split_gain", 0, 5),
+            "min_split_gain": trial.suggest_float("min_split_gain", 0, 2),
+            "min_child_samples": trial.suggest_int("min_samples_leaf", 10, 80),
         }
         clf = LGBMClassifier(**param_space)
         model = get_pipeline(X_train, clf)
