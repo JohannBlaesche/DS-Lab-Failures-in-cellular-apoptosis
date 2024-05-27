@@ -23,6 +23,7 @@ dependencies = [
     "catboost>=1.2.5",
     "imbalanced-learn>=0.12.2",
     "xgboost>=2.0.3",
+    "optuna>=3.6.1",
 ]
 
 [tool.setuptools_scm]

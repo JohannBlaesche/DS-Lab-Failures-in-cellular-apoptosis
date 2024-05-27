@@ -16,6 +16,7 @@ from dmgpred.cleaning import clean
 from dmgpred.evaluate import evaluate
 from dmgpred.featurize import featurize
 from dmgpred.train import train
+from dmgpred.tune_lgbm import tune
 
 DATA_PATH = "./data"
 OUTPUT_PATH = "./output"
@@ -83,8 +84,11 @@ def main(add_metrics, n_folds, log_level, use_gpu):
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
 
+    # run optimization
+    clf = tune(X_train, y_train, n_trials=100)
+
     logger.info("Training the model on full dataset...")
-    model = train(X_train, y_train, use_gpu=use_gpu)
+    model = train(X_train, y_train, use_gpu=use_gpu, clf=clf)
     dump(model, f"{OUTPUT_PATH}/trained_model.pkl")
     logger.info(f"Model saved to {OUTPUT_PATH}/trained_model.pkl")
     y_pred = model.predict(X_test)
