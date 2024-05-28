@@ -1,5 +1,6 @@
 """Main Script of the pipeline."""
 
+import json
 import sys
 import time
 import warnings
@@ -9,6 +10,7 @@ import click
 import numpy as np
 import pandas as pd
 from joblib import dump
+from lightgbm import LGBMClassifier
 from loguru import logger
 from sklearn import set_config
 
@@ -16,7 +18,6 @@ from dmgpred.cleaning import clean
 from dmgpred.evaluate import evaluate
 from dmgpred.featurize import featurize
 from dmgpred.train import train
-from dmgpred.tune_lgbm import tune
 
 DATA_PATH = "./data"
 OUTPUT_PATH = "./output"
@@ -49,7 +50,18 @@ TARGET = "damage_grade"
 @click.option(
     "--use-gpu", default=True, is_flag=True, help="Use GPU for training if supported."
 )
-def main(add_metrics, n_folds, log_level, use_gpu):
+@click.option(
+    "--tune",
+    default=False,
+    is_flag=True,
+    help="Run hyperparameter tuning of pipeline models with Optuna.",
+)
+@click.option(
+    "--n-trials",
+    default=100,
+    help="Number of trials for hyperparameter optimization for each model.",
+)
+def main(add_metrics, n_folds, log_level, use_gpu, tune, n_trials):
     """Run the Damage Prediction Pipeline.
 
     This pipeline consists of four steps, namely cleaning, featurization,
@@ -85,10 +97,15 @@ def main(add_metrics, n_folds, log_level, use_gpu):
     X_train, X_test = featurize(X_train, X_test)
 
     # run optimization
-    clf = tune(X_train, y_train, n_trials=100)
+    if tune:
+        lgbm_best_params = tune(X_train, y_train, n_trials=n_trials)
+    else:
+        with open(f"{OUTPUT_PATH}/lgbm_best_params.json") as f:
+            lgbm_best_params = json.load(f)
+    lgb = LGBMClassifier(**lgbm_best_params)
 
     logger.info("Training the model on full dataset...")
-    model = train(X_train, y_train, use_gpu=use_gpu, clf=clf)
+    model = train(X_train, y_train, use_gpu=use_gpu, clf=lgb)
     dump(model, f"{OUTPUT_PATH}/trained_model.pkl")
     logger.info(f"Model saved to {OUTPUT_PATH}/trained_model.pkl")
     y_pred = model.predict(X_test)

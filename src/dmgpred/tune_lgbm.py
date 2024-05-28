@@ -2,7 +2,6 @@
 
 import json
 
-import joblib
 import optuna
 from lightgbm import LGBMClassifier
 from loguru import logger
@@ -12,29 +11,36 @@ from sklearn.model_selection import train_test_split
 from dmgpred.train import get_pipeline
 
 
-def tune(X, y, n_trials=100, random_state=0):
+def tune(X, y, n_trials=100, random_state=0, study_name="lgbm", objective=None) -> dict:
     """Tune the model with optuna."""
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=random_state, stratify=y
     )
-
-    objective = get_lgbm_objective(X_train, y_train, X_test, y_test)
+    if objective is None:
+        objective = get_lgbm_objective(X_train, y_train, X_test, y_test)
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
-    study = optuna.create_study(study_name="optimize_lgbm", direction="maximize")
+
+    storage_name = f"sqlite:///./output/{study_name}.db"
+    study = optuna.create_study(
+        study_name=study_name,
+        direction="maximize",
+        storage=storage_name,
+        load_if_exists=True,
+    )
+
     logger.info(f"Starting Hyperparameter Optimization with {n_trials} trials...")
     study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
 
     best_params = study.best_params
     constants = get_lgbm_constant_params(random_state)
     best_params.update(constants)
-    logger.info(f"Study completed with best score: {study.best_value}")
-    # persist the study and params
-    joblib.dump(study, "./output/lgbm_study.pkl")
-    with open("./output/lgbm_best_params.json", "w") as f:
+    logger.info(f"Study completed with best score: {study.best_value:.4f}")
+
+    with open(f"./output/{study_name}_best_params.json", "w") as f:
         json.dump(best_params, f, indent=4)
 
-    return LGBMClassifier(**best_params)
+    return best_params
 
 
 def get_lgbm_constant_params(random_state=0):
