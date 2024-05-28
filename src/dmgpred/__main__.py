@@ -18,6 +18,7 @@ from dmgpred.cleaning import clean
 from dmgpred.evaluate import evaluate
 from dmgpred.featurize import featurize
 from dmgpred.train import train
+from dmgpred.tune_lgbm import run_optimization
 
 DATA_PATH = "./data"
 OUTPUT_PATH = "./output"
@@ -98,7 +99,7 @@ def main(add_metrics, n_folds, log_level, use_gpu, tune, n_trials):
 
     # run optimization
     if tune:
-        lgbm_best_params = tune(X_train, y_train, n_trials=n_trials)
+        lgbm_best_params = run_optimization(X_train, y_train, n_trials=n_trials)
     else:
         with open(f"{OUTPUT_PATH}/lgbm_best_params.json") as f:
             lgbm_best_params = json.load(f)

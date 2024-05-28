@@ -11,13 +11,17 @@ from sklearn.model_selection import train_test_split
 from dmgpred.train import get_pipeline
 
 
-def tune(X, y, n_trials=100, random_state=0, study_name="lgbm", objective=None) -> dict:
+def run_optimization(
+    X, y, n_trials=100, random_state=0, study_name="lgbm", objective=None, use_gpu=True
+) -> dict:
     """Tune the model with optuna."""
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=random_state, stratify=y
     )
     if objective is None:
-        objective = get_lgbm_objective(X_train, y_train, X_test, y_test)
+        objective = get_lgbm_objective(
+            X_train, y_train, X_test, y_test, use_gpu=use_gpu
+        )
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
@@ -43,7 +47,7 @@ def tune(X, y, n_trials=100, random_state=0, study_name="lgbm", objective=None) 
     return best_params
 
 
-def get_lgbm_constant_params(random_state=0):
+def get_lgbm_constant_params(random_state=0, use_gpu=True):
     """Return the constant parameters for LGBM."""
     constant_params = {
         "objective": "multiclass",
@@ -51,7 +55,7 @@ def get_lgbm_constant_params(random_state=0):
         "class_weight": "balanced",
         "random_state": random_state,
         "verbose": -1,
-        "device": "gpu",
+        "device": "gpu" if use_gpu else "cpu",
         "subsample_freq": 1,
         "n_estimators": 1250,
         "learning_rate": 0.0215,
@@ -80,12 +84,13 @@ def get_lgbm_param_space(trial, constant_params=None):
     return param_space
 
 
-def get_lgbm_objective(X_train, y_train, X_test, y_test):
+def get_lgbm_objective(X_train, y_train, X_test, y_test, use_gpu=True):
     """Return the objective function for LGBM."""
 
     def objective(trial):
         """Tune LGBM."""
-        param_space = get_lgbm_param_space(trial)
+        constants = get_lgbm_constant_params(use_gpu=use_gpu)
+        param_space = get_lgbm_param_space(trial, constants)
         clf = LGBMClassifier(**param_space)
         model = get_pipeline(X_train, clf)
         model.fit(X_train, y_train)
