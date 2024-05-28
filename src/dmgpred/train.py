@@ -16,11 +16,11 @@ def get_pipeline(X: pd.DataFrame, clf=None):
     """Return the training pipeline."""
     if clf is None:
         clf = DummyClassifier(strategy="most_frequent")
-    normalizer = get_normalizer()
+    normalizer = get_normalizer()  # noqa: F841
     encoder = get_encoder(X)
     return Pipeline(
         [
-            ("normalizer", normalizer),
+            # ("normalizer", normalizer),
             ("encoder", encoder),
             ("clf", clf),
         ],
