@@ -1,5 +1,7 @@
 """Training step in the pipeline."""
 
+import json
+
 import pandas as pd
 from catboost import CatBoostClassifier
 from imblearn.pipeline import Pipeline
@@ -16,11 +18,11 @@ def get_pipeline(X: pd.DataFrame, clf=None):
     """Return the training pipeline."""
     if clf is None:
         clf = DummyClassifier(strategy="most_frequent")
-    normalizer = get_normalizer()  # noqa: F841
+    normalizer = get_normalizer()
     encoder = get_encoder(X)
     return Pipeline(
         [
-            # ("normalizer", normalizer),
+            ("normalizer", normalizer),
             ("encoder", encoder),
             ("clf", clf),
         ],
@@ -33,11 +35,12 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
     if use_gpu:
         task_type = "GPU"
         device = "cuda"
-        lgbm_device = "gpu"
     else:
         task_type = "CPU"
         device = "cpu"
-        lgbm_device = "cpu"
+
+    with open("./output/lgbm_best_params.json") as f:
+        lgbm_params = json.load(f)
 
     return VotingClassifier(
         estimators=[
@@ -62,13 +65,7 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
             ),
             (
                 "lgbm",
-                LGBMClassifier(
-                    n_estimators=1000,
-                    random_state=0,
-                    class_weight="balanced",
-                    device=lgbm_device,
-                    verbose=0,
-                ),
+                LGBMClassifier(**lgbm_params),
             ),
         ],
         voting="soft",
