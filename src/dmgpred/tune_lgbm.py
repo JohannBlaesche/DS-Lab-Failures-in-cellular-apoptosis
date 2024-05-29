@@ -37,8 +37,6 @@ def run_optimization(
     study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
 
     best_params = study.best_params
-    constants = get_lgbm_constant_params(random_state)
-    best_params.update(constants)
     logger.info(f"Study completed with best score: {study.best_value:.4f}")
 
     with open(f"./output/{study_name}_best_params.json", "w") as f:
@@ -47,29 +45,20 @@ def run_optimization(
     return best_params
 
 
-def get_lgbm_constant_params(random_state=0, use_gpu=True):
-    """Return the constant parameters for LGBM."""
-    constant_params = {
-        "objective": "multiclass",
-        "num_class": 3,
-        "class_weight": "balanced",
-        "random_state": random_state,
-        "verbose": -1,
-        "device": "gpu" if use_gpu else "cpu",
-        "subsample_freq": 1,
-        "n_estimators": 1250,
-        "learning_rate": 0.0215,
-    }
-    return constant_params
-
-
-def get_lgbm_param_space(trial, constant_params=None):
+def get_lgbm_param_space(trial, use_gpu=True, random_state=0):
     """Return the parameter space for LGBM to tune."""
-    constant_params = constant_params or get_lgbm_constant_params()
     max_depth = trial.suggest_int("max_depth", 6, 12)
     num_leaves = trial.suggest_int("num_leaves", 50, 2**max_depth)
     param_space = {
-        **constant_params,
+        "objective": trial.suggest_categorical("objective", ["multiclass"]),
+        "num_class": trial.suggest_categorical("num_class", [3]),
+        "class_weight": trial.suggest_categorical("class_weight", ["balanced"]),
+        "random_state": trial.suggest_categorical("random_state", [random_state]),
+        "verbose": trial.suggest_categorical("verbose", [-1]),
+        "device": trial.suggest_categorical("device", ["gpu" if use_gpu else "cpu"]),
+        "subsample_freq": trial.suggest_categorical("subsample_freq", [1]),
+        "n_estimators": trial.suggest_categorical("n_estimators", [1250]),
+        "learning_rate": trial.suggest_categorical("learning_rate", [0.0215]),
         "num_leaves": num_leaves,
         "max_depth": max_depth,
         # "n_estimators": trial.suggest_int("n_estimators", 1000, 1500),
@@ -89,8 +78,7 @@ def get_lgbm_objective(X_train, y_train, X_test, y_test, use_gpu=True):
 
     def objective(trial):
         """Tune LGBM."""
-        constants = get_lgbm_constant_params(use_gpu=use_gpu)
-        param_space = get_lgbm_param_space(trial, constants)
+        param_space = get_lgbm_param_space(trial, use_gpu=use_gpu)
         clf = LGBMClassifier(**param_space)
         model = get_pipeline(X_train, clf)
         model.fit(X_train, y_train)

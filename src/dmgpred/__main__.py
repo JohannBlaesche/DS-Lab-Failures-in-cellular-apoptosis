@@ -104,7 +104,6 @@ def main(add_metrics, n_folds, log_level, use_gpu, tune, n_trials):
         with open(f"{OUTPUT_PATH}/lgbm_best_params.json") as f:
             lgbm_best_params = json.load(f)
     lgb = LGBMClassifier(**lgbm_best_params)
-
     logger.info("Training the model on full dataset...")
     model = train(X_train, y_train, use_gpu=use_gpu, clf=lgb)
     dump(model, f"{OUTPUT_PATH}/trained_model.pkl")

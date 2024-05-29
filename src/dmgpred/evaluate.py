@@ -55,7 +55,7 @@ def evaluate(
     results : dict
         The results dict of sklearn.model_selection.cross_validate.
     """
-    cv = StratifiedKFold(n_splits=n_folds)
+    cv = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=0)
 
     if additional_scoring is None:
         additional_scoring = {}
