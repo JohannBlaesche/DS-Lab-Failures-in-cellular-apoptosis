@@ -1,6 +1,7 @@
 """Hyperparameter tuning for the model."""
 
 import json
+import logging
 
 import optuna
 from lightgbm import LGBMClassifier
@@ -9,12 +10,18 @@ from sklearn.metrics import matthews_corrcoef
 from sklearn.model_selection import train_test_split
 
 from dmgpred.train import get_pipeline
+from dmgpred.utils.eval import evaluate_clf
+from dmgpred.utils.logging import InterceptHandler
 
 
 def run_optimization(
     X, y, n_trials=100, random_state=0, study_name="lgbm", objective=None, use_gpu=True
 ) -> dict:
     """Tune the model with optuna."""
+    logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
+    optuna.logging.enable_propagation()
+    optuna.logging.disable_default_handler()
+
     X_train_full, X_test, y_train_full, y_test = train_test_split(
         X, y, test_size=0.2, random_state=random_state, stratify=y
     )
@@ -29,8 +36,6 @@ def run_optimization(
 
     if objective is None:
         objective = get_lgbm_objective(X_train, y_train, X_val, y_val, use_gpu=use_gpu)
-
-    optuna.logging.set_verbosity(optuna.logging.WARNING)
 
     storage_name = f"sqlite:///./output/{study_name}.db"
     study = optuna.create_study(
@@ -51,12 +56,7 @@ def run_optimization(
 
     logger.info("Evaluating parameters on hold-out test set...")
     clf = LGBMClassifier(**best_params)
-    model = get_pipeline(X_train, clf)
-    model.fit(X_train_full, y_train_full)
-    y_pred = model.predict(X_test)
-    score = matthews_corrcoef(y_test, y_pred)
-    logger.info(f"Final score on test set: {score:.4f}")
-
+    evaluate_clf(clf, X_train, y_train, X_test, y_test)
     return best_params
 
 
