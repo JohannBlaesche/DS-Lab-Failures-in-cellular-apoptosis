@@ -3,7 +3,6 @@
 import json
 import sys
 import time
-import warnings
 from pathlib import Path
 
 import click
@@ -73,11 +72,6 @@ def main(add_metrics, n_folds, log_level, use_gpu, tune, n_trials):
     The model is then used to predict the
     damage grade of the test data and the results are saved to a CSV file.
     """
-    warnings.filterwarnings(
-        action="ignore",
-        category=FutureWarning,
-        message=r".*Downcasting object dtype arrays.*",
-    )
     # a simple timer, could use TQDM later on for progress bars
     setup_logger(log_level)
     np.random.seed(0)

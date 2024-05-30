@@ -32,7 +32,7 @@ dependencies = [
 dmgpred = "dmgpred.__main__:main"
 
 [project.optional-dependencies]
-dev = ["pytest", "pre-commit", "pdoc", "jupyter", "ruff"]
+dev = ["pytest", "pre-commit", "pdoc", "jupyter", "ruff", "kaleido"]
 
 [tool.ruff]
 line-length = 88
