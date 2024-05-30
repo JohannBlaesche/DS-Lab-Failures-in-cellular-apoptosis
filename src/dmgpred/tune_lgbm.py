@@ -15,13 +15,20 @@ def run_optimization(
     X, y, n_trials=100, random_state=0, study_name="lgbm", objective=None, use_gpu=True
 ) -> dict:
     """Tune the model with optuna."""
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train_full, X_test, y_train_full, y_test = train_test_split(
         X, y, test_size=0.2, random_state=random_state, stratify=y
     )
+
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train_full,
+        y_train_full,
+        test_size=0.2,
+        random_state=random_state,
+        stratify=y_train_full,
+    )
+
     if objective is None:
-        objective = get_lgbm_objective(
-            X_train, y_train, X_test, y_test, use_gpu=use_gpu
-        )
+        objective = get_lgbm_objective(X_train, y_train, X_val, y_val, use_gpu=use_gpu)
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
@@ -41,6 +48,14 @@ def run_optimization(
 
     with open(f"./output/{study_name}_best_params.json", "w") as f:
         json.dump(best_params, f, indent=4)
+
+    logger.info("Evaluating parameters on hold-out test set...")
+    clf = LGBMClassifier(**best_params)
+    model = get_pipeline(X_train, clf)
+    model.fit(X_train_full, y_train_full)
+    y_pred = model.predict(X_test)
+    score = matthews_corrcoef(y_test, y_pred)
+    logger.info(f"Final score on test set: {score:.4f}")
 
     return best_params
 
@@ -63,7 +78,6 @@ def get_lgbm_param_space(trial, use_gpu=True, random_state=0):
         "max_depth": max_depth,
         "n_estimators": trial.suggest_int("n_estimators", 1300, 1350),
         "learning_rate": trial.suggest_float("learning_rate", 1e-2, 3e-1, log=True),
-        # "learning_rate": trial.suggest_float("learning_rate", 0.05, 0.17),
         "subsample": trial.suggest_float("subsample", 0.4, 1.0),
         "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
         "reg_alpha": trial.suggest_float("reg_alpha", 1e-3, 4.0, log=True),
@@ -74,7 +88,7 @@ def get_lgbm_param_space(trial, use_gpu=True, random_state=0):
     return param_space
 
 
-def get_lgbm_objective(X_train, y_train, X_test, y_test, use_gpu=True):
+def get_lgbm_objective(X_train, y_train, X_val, y_val, use_gpu=True):
     """Return the objective function for LGBM."""
 
     def objective(trial):
@@ -86,8 +100,8 @@ def get_lgbm_objective(X_train, y_train, X_test, y_test, use_gpu=True):
             X_train,
             y_train,
         )
-        y_pred = model.predict(X_test)
-        score = matthews_corrcoef(y_test, y_pred)
+        y_pred = model.predict(X_val)
+        score = matthews_corrcoef(y_val, y_pred)
         return score
 
     return objective
