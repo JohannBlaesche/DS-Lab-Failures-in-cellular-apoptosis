@@ -47,9 +47,7 @@ TARGET = "damage_grade"
         ["debug", "info", "success", "warning", "error"], case_sensitive=False
     ),
 )
-@click.option(
-    "--use-gpu", default=True, is_flag=True, help="Use GPU for training if supported."
-)
+@click.option("--no-gpu", default=False, is_flag=True, help="Use CPU for training.")
 @click.option(
     "--tune",
     default=False,
@@ -61,7 +59,7 @@ TARGET = "damage_grade"
     default=100,
     help="Number of trials for hyperparameter optimization for each model.",
 )
-def main(add_metrics, n_folds, log_level, use_gpu, tune, n_trials):
+def main(add_metrics, n_folds, log_level, no_gpu, tune, n_trials):
     """Run the Damage Prediction Pipeline.
 
     This pipeline consists of four steps, namely cleaning, featurization,
@@ -91,9 +89,12 @@ def main(add_metrics, n_folds, log_level, use_gpu, tune, n_trials):
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
 
+    use_gpu = not no_gpu
     # run optimization
     if tune:
-        lgbm_best_params = run_optimization(X_train, y_train, n_trials=n_trials)
+        lgbm_best_params = run_optimization(
+            X_train, y_train, n_trials=n_trials, use_gpu=use_gpu
+        )
     else:
         with open(f"{OUTPUT_PATH}/lgbm_best_params.json") as f:
             lgbm_best_params = json.load(f)

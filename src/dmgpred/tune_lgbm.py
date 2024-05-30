@@ -48,25 +48,26 @@ def run_optimization(
 def get_lgbm_param_space(trial, use_gpu=True, random_state=0):
     """Return the parameter space for LGBM to tune."""
     max_depth = trial.suggest_int("max_depth", 6, 12)
-    num_leaves = trial.suggest_int("num_leaves", 50, 2**max_depth)
+    num_leaves = trial.suggest_int("num_leaves", 50, 2**max_depth * 0.8)
+    device = "gpu" if use_gpu else "cpu"
     param_space = {
         "objective": trial.suggest_categorical("objective", ["multiclass"]),
         "num_class": trial.suggest_categorical("num_class", [3]),
         "class_weight": trial.suggest_categorical("class_weight", ["balanced"]),
         "random_state": trial.suggest_categorical("random_state", [random_state]),
         "verbose": trial.suggest_categorical("verbose", [-1]),
-        "device": trial.suggest_categorical("device", ["gpu" if use_gpu else "cpu"]),
+        "n_jobs": trial.suggest_categorical("n_jobs", [-1]),
+        "device": trial.suggest_categorical("device", [device]),
         "subsample_freq": trial.suggest_categorical("subsample_freq", [1]),
         "num_leaves": num_leaves,
         "max_depth": max_depth,
-        "n_estimators": trial.suggest_int("n_estimators", 1000, 1500),
-        # "n_estimators": trial.suggest_categorical("n_estimators", [1250]),
-        "learning_rate": trial.suggest_float("learning_rate", 1e-2, 2e-1, log=False),
-        # "learning_rate": trial.suggest_categorical("learning_rate", [0.05]),
+        "n_estimators": trial.suggest_int("n_estimators", 1300, 1350),
+        "learning_rate": trial.suggest_float("learning_rate", 1e-2, 3e-1, log=True),
+        # "learning_rate": trial.suggest_float("learning_rate", 0.05, 0.17),
         "subsample": trial.suggest_float("subsample", 0.4, 1.0),
         "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
-        "reg_alpha": trial.suggest_float("reg_alpha", 2e-2, 4.0, log=True),
-        "reg_lambda": trial.suggest_float("reg_lambda", 2e-2, 4.0, log=True),
+        "reg_alpha": trial.suggest_float("reg_alpha", 1e-3, 4.0, log=True),
+        "reg_lambda": trial.suggest_float("reg_lambda", 1e-3, 4.0, log=True),
         "min_split_gain": trial.suggest_float("min_split_gain", 0, 2),
         "min_child_samples": trial.suggest_int("min_child_samples", 20, 80),
     }
@@ -81,7 +82,10 @@ def get_lgbm_objective(X_train, y_train, X_test, y_test, use_gpu=True):
         param_space = get_lgbm_param_space(trial, use_gpu=use_gpu)
         clf = LGBMClassifier(**param_space)
         model = get_pipeline(X_train, clf)
-        model.fit(X_train, y_train)
+        model.fit(
+            X_train,
+            y_train,
+        )
         y_pred = model.predict(X_test)
         score = matthews_corrcoef(y_test, y_pred)
         return score
