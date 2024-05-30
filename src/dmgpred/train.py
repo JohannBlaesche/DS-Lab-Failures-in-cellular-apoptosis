@@ -4,10 +4,9 @@ import json
 
 import pandas as pd
 from catboost import CatBoostClassifier
-from imblearn.pipeline import Pipeline
 from lightgbm import LGBMClassifier
-from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import VotingClassifier
+from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
 
 from dmgpred.cleaning import get_normalizer
@@ -16,18 +15,23 @@ from dmgpred.featurize import get_encoder
 
 def get_pipeline(X: pd.DataFrame, clf=None):
     """Return the training pipeline."""
-    if clf is None:
-        clf = DummyClassifier(strategy="most_frequent")
     normalizer = get_normalizer()
     encoder = get_encoder(X)
-    return Pipeline(
+    preprocessor = Pipeline(
         [
             ("normalizer", normalizer),
             ("encoder", encoder),
-            ("clf", clf),
         ],
-        verbose=False,
     )
+    if clf is None:
+        return preprocessor
+    else:
+        return Pipeline(
+            [
+                ("preprocessor", preprocessor),
+                ("clf", clf),
+            ],
+        )
 
 
 def get_classifier(X_train: pd.DataFrame, use_gpu=True):
