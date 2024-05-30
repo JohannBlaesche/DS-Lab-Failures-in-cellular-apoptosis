@@ -16,7 +16,7 @@ from dmgpred.utils.logging import InterceptHandler
 
 
 def run_optimization(
-    X, y, n_trials=100, random_state=0, study_name="lgbm", objective=None, use_gpu=True
+    X, y, n_trials=100, random_state=0, study_name="lgbm", use_gpu=True
 ) -> dict:
     """Tune the model with optuna."""
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
@@ -35,8 +35,9 @@ def run_optimization(
         stratify=y_train_full,
     )
 
-    if objective is None:
-        objective = get_lgbm_objective(X_train, y_train, X_val, y_val, use_gpu=use_gpu)
+    objective, X_val_processed = get_lgbm_objective(
+        X_train, y_train, X_val, y_val, use_gpu=use_gpu
+    )
 
     storage_name = f"sqlite:///./output/{study_name}.db"
     study = optuna.create_study(
@@ -52,12 +53,21 @@ def run_optimization(
     best_params = study.best_params
     logger.info(f"Study completed with best score: {study.best_value:.4f}")
 
-    with open(f"./output/{study_name}_best_params.json", "w") as f:
-        json.dump(best_params, f, indent=4)
-
     logger.info("Evaluating parameters on hold-out test set...")
     clf = LGBMClassifier(**best_params)
-    evaluate_clf(clf, X_train, y_train, X_test, y_test)
+    clf, _ = evaluate_clf(
+        clf,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        clf__eval_set=[(X_val_processed, y_val)],
+        clf__callbacks=[lgb.early_stopping(20, verbose=False)],
+    )
+    best_iter = clf.best_iteration_
+    best_params["n_estimators"] = best_iter
+    with open(f"./output/{study_name}_best_params.json", "w") as f:
+        json.dump(best_params, f, indent=4)
     return best_params
 
 
@@ -66,7 +76,7 @@ def get_lgbm_param_space(trial, use_gpu=True, random_state=0):
     max_depth = trial.suggest_int("max_depth", 8, 63)
     num_leaves = trial.suggest_int("num_leaves", 7, 3000)
     device = "gpu" if use_gpu else "cpu"
-    n_jobs = "1" if use_gpu else "-1"
+    n_jobs = 1 if use_gpu else -1
     param_space = {
         "objective": trial.suggest_categorical("objective", ["multiclass"]),
         "num_class": trial.suggest_categorical("num_class", [3]),
@@ -78,12 +88,8 @@ def get_lgbm_param_space(trial, use_gpu=True, random_state=0):
         "subsample_freq": trial.suggest_categorical("subsample_freq", [1]),
         "num_leaves": num_leaves,
         "max_depth": max_depth,
-        "n_estimators": trial.suggest_int(
-            "n_estimators", 100_000, 100_000
-        ),  # automatically with early stopping
-        "learning_rate": trial.suggest_float(
-            "learning_rate", 0.10, 0.10
-        ),  # keep it fixed
+        "n_estimators": trial.suggest_int("n_estimators", 100_000, 100_000),
+        "learning_rate": trial.suggest_float("learning_rate", 0.10, 0.10),
         "subsample": trial.suggest_float("subsample", 0.4, 1.0),
         "colsample_bytree": trial.suggest_float("colsample_bytree", 0.4, 1.0),
         "reg_alpha": trial.suggest_float("reg_alpha", 1e-3, 2.0, log=True),
@@ -109,12 +115,10 @@ def get_lgbm_objective(X_train, y_train, X_val, y_val, use_gpu=True):
             X_train,
             y_train,
             clf__eval_set=[(X_val_processed, y_val)],
-            clf__callbacks=[
-                lgb.early_stopping(20, first_metric_only=True, verbose=False)
-            ],
+            clf__callbacks=[lgb.early_stopping(20, verbose=False)],
         )
         y_pred = model.predict(X_val)
         score = matthews_corrcoef(y_val, y_pred)
         return score
 
-    return objective
+    return objective, X_val_processed
