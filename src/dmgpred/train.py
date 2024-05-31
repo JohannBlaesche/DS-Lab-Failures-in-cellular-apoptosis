@@ -39,17 +39,26 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
         device = "cpu"
         lgbm_device = "cpu"
 
+    xgb_params = {
+        "objective": "multi:softprob",
+        "learning_rate": 0.0906481523921039,
+        "n_estimators": 1850,
+        "max_depth": 5,
+        "subsample": 0.7296057237367,
+        "colsample_bytree": 0.7504806008221163,
+        "min_child_weight": 6,
+        "reg_lambda": 103,
+        "random_state": 0,
+        "tree_method": "hist",
+        "seed": 0,
+        "device": device,
+    }
+
     return VotingClassifier(
         estimators=[
             (
                 "xgb",
-                XGBClassifier(
-                    enable_categorical=True,
-                    n_estimators=1000,
-                    tree_method="hist",
-                    device=device,
-                    random_state=0,
-                ),
+                XGBClassifier(**xgb_params),
             ),
             (
                 "catboost",
