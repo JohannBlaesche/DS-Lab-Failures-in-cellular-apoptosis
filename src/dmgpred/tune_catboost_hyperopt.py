@@ -6,6 +6,7 @@ import joblib
 import numpy as np
 from catboost import CatBoostClassifier
 from hyperopt import Trials, fmin, hp, tpe
+from loguru import logger
 from sklearn.metrics import matthews_corrcoef
 from sklearn.model_selection import train_test_split
 
@@ -44,6 +45,6 @@ def tune(X, y, n_trials=100, random_state=0):
     )
     joblib.dump(trials, "./output/trials_catboost.pkl")
 
-    print(best_params)
+    logger.info(f"Study completed with best score: {best_params}")
 
     return CatBoostClassifier(**best_params)

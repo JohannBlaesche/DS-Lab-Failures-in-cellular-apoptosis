@@ -16,7 +16,7 @@ from dmgpred.cleaning import clean
 from dmgpred.evaluate import evaluate
 from dmgpred.featurize import featurize
 from dmgpred.train import train
-from dmgpred.tune_catboost_hyperopt import tune
+from dmgpred.tune_catboost_optuna import tune_optuna
 
 DATA_PATH = "./data"
 OUTPUT_PATH = "./output"
@@ -84,7 +84,8 @@ def main(add_metrics, n_folds, log_level, use_gpu):
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
 
-    clf = tune(X_train, y_train, n_trials=100)
+    # clf = tune(X_train, y_train, n_trials=100)
+    clf = tune_optuna(X_train, y_train, n_trials=100)
 
     logger.info("Training the model on full dataset...")
     model = train(X_train, y_train, use_gpu=use_gpu, clf=clf)
@@ -105,7 +106,7 @@ def main(add_metrics, n_folds, log_level, use_gpu):
     )
 
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
-    submission = pd.DataFrame({INDEX_COL: X_test.index, TARGET: y_pred})
+    submission = pd.DataFrame({INDEX_COL: X_test.index, TARGET: y_pred.reshape(-1)})
     submission.to_csv(SUBMISSION_PATH, index=False)
     logger.info(f"Submission saved to {SUBMISSION_PATH}")
     end = time.perf_counter()

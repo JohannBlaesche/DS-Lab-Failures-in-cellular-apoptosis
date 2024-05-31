@@ -24,6 +24,7 @@ dependencies = [
     "imbalanced-learn>=0.12.2",
     "xgboost>=2.0.3",
     "hpyeropt>=0.2.7",
+    "optuna>=3.6.1",
 ]
 
 [tool.setuptools_scm]
