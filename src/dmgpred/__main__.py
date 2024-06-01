@@ -1,6 +1,5 @@
 """Main Script of the pipeline."""
 
-import json
 import sys
 import time
 from pathlib import Path
@@ -9,7 +8,6 @@ import click
 import numpy as np
 import pandas as pd
 from joblib import dump
-from lightgbm import LGBMClassifier
 from loguru import logger
 from sklearn import set_config
 
@@ -84,26 +82,26 @@ def main(add_metrics, n_folds, log_level, no_gpu, tune, n_trials):
     # need building id as index here,
     # otherwise it is interpreted as multi-output classification
     y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col=INDEX_COL)
-    y_train = y_train[TARGET]
+    y_train = y_train[TARGET] - 1
 
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
 
     use_gpu = not no_gpu
-    # run optimization
     if tune:
-        lgbm_best_params = run_optimization(
-            X_train, y_train, n_trials=n_trials, use_gpu=use_gpu
+        run_optimization(
+            X_train, y_train, n_trials=n_trials, use_gpu=use_gpu, study_name="xgb"
         )
-    else:
-        with open(f"{OUTPUT_PATH}/lgbm_best_params.json") as f:
-            lgbm_best_params = json.load(f)
-    lgb = LGBMClassifier(**lgbm_best_params)
+
+        run_optimization(
+            X_train, y_train, n_trials=n_trials, use_gpu=use_gpu, study_name="lgbm"
+        )
+
     logger.info("Training the model on full dataset...")
-    model = train(X_train, y_train, use_gpu=use_gpu, clf=lgb)
+    model = train(X_train, y_train, use_gpu=use_gpu)
     dump(model, f"{OUTPUT_PATH}/trained_model.pkl")
     logger.info(f"Model saved to {OUTPUT_PATH}/trained_model.pkl")
-    y_pred = model.predict(X_test)
+    y_pred = model.predict(X_test) + 1
 
     if add_metrics is not None:
         add_metrics = {metric: metric for metric in add_metrics.split(",")}
