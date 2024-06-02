@@ -103,22 +103,22 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
 
     return VotingClassifier(
         estimators=[
-            # (
-            #     "xgb",
-            #     MyXGBClassifier(
-            #         **xgb_params,
-            #     ),
-            # ),
+            (
+                "xgb",
+                MyXGBClassifier(
+                    **xgb_params,
+                ),
+            ),
             (
                 "catboost",
                 CatBoostClassifier(
                     **catboost_params,
                 ),
             ),
-            # (
-            #     "lgbm",
-            #     LGBMClassifier(**lgbm_params),
-            # ),
+            (
+                "lgbm",
+                LGBMClassifier(**lgbm_params),
+            ),
         ],
         voting="soft",
     )
