@@ -104,6 +104,21 @@ def get_classifier(use_gpu=True):
     xgb_params["device"] = device
     catboost_params["task_type"] = task_type
 
+    xgb_params_second = {  # noqa: F841
+        "objective": "multi:softprob",
+        "learning_rate": 0.0906481523921039,
+        "n_estimators": 1850,
+        "max_depth": 5,
+        "subsample": 0.7296057237367,
+        "colsample_bytree": 0.7504806008221163,
+        "min_child_weight": 6,
+        "reg_lambda": 103,
+        "random_state": 0,
+        "tree_method": "hist",
+        "seed": 0,
+        "device": device,
+    }
+
     return VotingClassifier(
         estimators=[
             (
