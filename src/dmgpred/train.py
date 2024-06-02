@@ -59,6 +59,9 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
     with open("./output/xgb_best_params.json") as f:
         xgb_params = json.load(f)
 
+    with open("./output/catboost_best_params.json") as f:
+        catboost_params = json.load(f)
+
     lgbm_params = {
         "max_depth": 63,
         "num_leaves": 825,
@@ -96,24 +99,22 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
 
     lgbm_params["device"] = device
     xgb_params["device"] = device
+    catboost_params["task_type"] = task_type
 
     return VotingClassifier(
         estimators=[
-            (
-                "xgb",
-                MyXGBClassifier(
-                    **xgb_params,
-                ),
-            ),
             # (
-            #     "catboost",
-            #     CatBoostClassifier(
-            #         n_estimators=1000,
-            #         task_type=task_type,
-            #         verbose=False,
-            #         random_state=0,
+            #     "xgb",
+            #     MyXGBClassifier(
+            #         **xgb_params,
             #     ),
             # ),
+            (
+                "catboost",
+                CatBoostClassifier(
+                    **catboost_params,
+                ),
+            ),
             # (
             #     "lgbm",
             #     LGBMClassifier(**lgbm_params),

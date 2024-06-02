@@ -90,8 +90,12 @@ def main(add_metrics, n_folds, log_level, no_gpu, tune, n_trials):
     use_gpu = not no_gpu
     if tune:
         run_optimization(
-            X_train, y_train, n_trials=n_trials, use_gpu=use_gpu, study_name="xgb"
+            X_train, y_train, n_trials=n_trials, use_gpu=use_gpu, study_name="catboost"
         )
+
+        # run_optimization(
+        #     X_train, y_train, n_trials=n_trials, use_gpu=use_gpu, study_name="xgb"
+        # )
 
         # run_optimization(
         #     X_train, y_train, n_trials=n_trials, use_gpu=use_gpu, study_name="lgbm"
