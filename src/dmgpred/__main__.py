@@ -84,7 +84,7 @@ def main(add_metrics, n_folds, log_level, use_gpu):
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
 
-    clf = tune_optuna(X_train, y_train, n_trials=200)
+    clf = tune_optuna(X_train, y_train, n_trials=1)
 
     logger.info("Training the model on full dataset...")
     model = train(X_train, y_train, use_gpu=use_gpu, clf=clf)
