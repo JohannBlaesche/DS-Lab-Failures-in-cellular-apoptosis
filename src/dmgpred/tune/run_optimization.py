@@ -105,7 +105,17 @@ def run_optimization(
         joblib.dump(clf, f)
     best_iter = clf.best_iteration_
     best_params["n_estimators"] = best_iter
-    best_params.pop("early_stopping_rounds", None)
+    to_drop = [
+        "early_stopping_rounds",
+        "od_type",
+        "od_wait",
+        "od_pval",
+        "use_best_model",
+        "eval_metric",
+    ]
+    for key in to_drop:
+        best_params.pop(key, None)
+
     with open(f"./output/{study_name}_best_params.json", "w") as f:
         json.dump(best_params, f, indent=4)
     return best_params
