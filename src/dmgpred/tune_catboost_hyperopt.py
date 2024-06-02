@@ -9,6 +9,7 @@ from hyperopt import Trials, fmin, hp, tpe
 from loguru import logger
 from sklearn.metrics import matthews_corrcoef
 from sklearn.model_selection import train_test_split
+from sklearn.multiclass import OutputCodeClassifier
 
 from dmgpred.train import get_pipeline
 
@@ -16,14 +17,14 @@ from dmgpred.train import get_pipeline
 np.warnings = warnings
 
 
-def tune(X, y, n_trials=100, random_state=0):
+def tune(X, y, n_trials=300, random_state=0):
     """Tune the model using hyperopt."""
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=random_state, stratify=y
     )
 
     def objective(params):
-        clf = CatBoostClassifier(**params)
+        clf = OutputCodeClassifier(CatBoostClassifier(**params, task_type="GPU"))
         model = get_pipeline(X_train, clf)
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
@@ -47,4 +48,4 @@ def tune(X, y, n_trials=100, random_state=0):
 
     logger.info(f"Study completed with best score: {best_params}")
 
-    return CatBoostClassifier(**best_params)
+    return OutputCodeClassifier(CatBoostClassifier(**best_params, task_type="GPU"))
