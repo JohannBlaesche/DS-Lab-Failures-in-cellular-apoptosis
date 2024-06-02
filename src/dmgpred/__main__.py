@@ -2,7 +2,6 @@
 
 import sys
 import time
-import warnings
 from pathlib import Path
 
 import click
@@ -16,7 +15,7 @@ from dmgpred.cleaning import clean
 from dmgpred.evaluate import evaluate
 from dmgpred.featurize import featurize
 from dmgpred.train import train
-from dmgpred.tune_catboost_optuna import tune_optuna
+from dmgpred.tune.run_optimization import run_optimization
 
 DATA_PATH = "./data"
 OUTPUT_PATH = "./output"
@@ -46,10 +45,19 @@ TARGET = "damage_grade"
         ["debug", "info", "success", "warning", "error"], case_sensitive=False
     ),
 )
+@click.option("--no-gpu", default=False, is_flag=True, help="Use CPU for training.")
 @click.option(
-    "--use-gpu", default=True, is_flag=True, help="Use GPU for training if supported."
+    "--tune",
+    default=False,
+    is_flag=True,
+    help="Run hyperparameter tuning of pipeline models with Optuna.",
 )
-def main(add_metrics, n_folds, log_level, use_gpu):
+@click.option(
+    "--n-trials",
+    default=100,
+    help="Number of trials for hyperparameter optimization for each model.",
+)
+def main(add_metrics, n_folds, log_level, no_gpu, tune, n_trials):
     """Run the Damage Prediction Pipeline.
 
     This pipeline consists of four steps, namely cleaning, featurization,
@@ -60,11 +68,6 @@ def main(add_metrics, n_folds, log_level, use_gpu):
     The model is then used to predict the
     damage grade of the test data and the results are saved to a CSV file.
     """
-    warnings.filterwarnings(
-        action="ignore",
-        category=FutureWarning,
-        message=r".*Downcasting object dtype arrays.*",
-    )
     # a simple timer, could use TQDM later on for progress bars
     setup_logger(log_level)
     np.random.seed(0)
@@ -79,18 +82,30 @@ def main(add_metrics, n_folds, log_level, use_gpu):
     # need building id as index here,
     # otherwise it is interpreted as multi-output classification
     y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col=INDEX_COL)
-    y_train = y_train[TARGET]
+    y_train = y_train[TARGET] - 1
 
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
 
-    clf = tune_optuna(X_train, y_train, n_trials=1)
+    use_gpu = not no_gpu
+    if tune:
+        run_optimization(
+            X_train, y_train, n_trials=n_trials, use_gpu=use_gpu, study_name="catboost"
+        )
+
+        # run_optimization(
+        #     X_train, y_train, n_trials=n_trials, use_gpu=use_gpu, study_name="xgb"
+        # )
+
+        # run_optimization(
+        #     X_train, y_train, n_trials=n_trials, use_gpu=use_gpu, study_name="lgbm"
+        # )
 
     logger.info("Training the model on full dataset...")
-    model = train(X_train, y_train, use_gpu=use_gpu, clf=clf)
+    model = train(X_train, y_train, use_gpu=use_gpu)
     dump(model, f"{OUTPUT_PATH}/trained_model.pkl")
     logger.info(f"Model saved to {OUTPUT_PATH}/trained_model.pkl")
-    y_pred = model.predict(X_test)
+    y_pred = model.predict(X_test) + 1
 
     if add_metrics is not None:
         add_metrics = {metric: metric for metric in add_metrics.split(",")}
