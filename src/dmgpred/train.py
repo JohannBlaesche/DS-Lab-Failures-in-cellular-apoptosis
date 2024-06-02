@@ -1,7 +1,5 @@
 """Training step in the pipeline."""
 
-import json
-
 import pandas as pd
 from catboost import CatBoostClassifier  # noqa: F401
 from lightgbm import LGBMClassifier  # noqa: F401
@@ -44,23 +42,14 @@ def get_pipeline(X: pd.DataFrame, clf=None):
         )
 
 
-def get_classifier(X_train: pd.DataFrame, use_gpu=True):
+def get_classifier(use_gpu=True):
     """Return the classifier used in the pipeline."""
     if use_gpu:
         task_type = "GPU"
         device = "gpu"
     else:
-        task_type = "CPU"  # noqa: F841
+        task_type = "CPU"
         device = "cpu"
-
-    with open("./output/lgbm_best_params.json") as f:
-        lgbm_params = json.load(f)
-
-    with open("./output/xgb_best_params.json") as f:
-        xgb_params = json.load(f)
-
-    with open("./output/catboost_best_params.json") as f:
-        catboost_params = json.load(f)
 
     lgbm_params = {
         "max_depth": 63,
@@ -95,6 +84,20 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
         "reg_alpha": 0.016473331281367257,
         "reg_lambda": 3.853385806806193,
         "min_split_loss": 0.003404333309597038,
+    }
+
+    catboost_params = {
+        "logging_level": "Silent",
+        "learning_rate": 0.05,
+        "auto_class_weights": "SqrtBalanced",
+        "random_seed": 0,
+        "depth": 8,
+        "l2_leaf_reg": 0.7122513572667153,
+        "bagging_temperature": 0.5977406690038695,
+        "random_strength": 0.015972918907197365,
+        "min_data_in_leaf": 100,
+        "border_count": 66,
+        "n_estimators": 1389,
     }
 
     lgbm_params["device"] = device
