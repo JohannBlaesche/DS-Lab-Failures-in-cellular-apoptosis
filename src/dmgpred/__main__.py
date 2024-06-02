@@ -15,7 +15,7 @@ from dmgpred.cleaning import clean
 from dmgpred.evaluate import evaluate
 from dmgpred.featurize import featurize
 from dmgpred.train import train
-from dmgpred.tune_lgbm import run_optimization
+from dmgpred.tune.run_optimization import run_optimization
 
 DATA_PATH = "./data"
 OUTPUT_PATH = "./output"
