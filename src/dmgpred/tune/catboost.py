@@ -9,7 +9,7 @@ from dmgpred.train import get_pipeline
 def get_catboost_param_space(trial, use_gpu=True):
     """Return the parameter space for CatBoost to tune."""
     param_space = {
-        "iterations": trial.suggest_int("iterations", 100_000, 100_000),
+        "iterations": trial.suggest_int("iterations", 1_000, 1_000),
         "logging_level": trial.suggest_categorical("logging_level", ["Silent"]),
         "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.05),
         "auto_class_weights": trial.suggest_categorical(
@@ -18,12 +18,12 @@ def get_catboost_param_space(trial, use_gpu=True):
         "random_seed": trial.suggest_categorical("random_seed", [0]),
         "use_best_model": trial.suggest_categorical("use_best_model", [True]),
         "task_type": trial.suggest_categorical("task_type", ["GPU"]),
-        "depth": trial.suggest_int("depth", 4, 12),
-        "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1e-2, 5.0, log=True),
-        "bagging_temperature": trial.suggest_float("bagging_temperature", 0.5, 2.0),
+        "depth": trial.suggest_int("depth", 2, 16),
+        "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1, 10.0, log=True),
+        "bagging_temperature": trial.suggest_float("bagging_temperature", 0.0, 1.0),
         "random_strength": trial.suggest_float("random_strength", 0.0, 1.0),
         "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 20, 100),
-        "border_count": trial.suggest_int("border_count", 32, 128, log=True),
+        "border_count": trial.suggest_int("border_count", 32, 128),
         "od_type": trial.suggest_categorical("od_type", ["IncToDec"]),
         "od_wait": trial.suggest_categorical("od_wait", [50]),
         "od_pval": trial.suggest_categorical("od_pval", [1e-6]),

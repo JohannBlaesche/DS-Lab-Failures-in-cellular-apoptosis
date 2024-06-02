@@ -46,9 +46,9 @@ def tune_optuna(X, y, n_trials=100, random_state=0):
             # "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 1, 100),
             # "border_count": trial.suggest_int("border_count", 1, 128, log=True),
             # "model_size_reg": trial.suggest_float("model_size_reg", 0.0, 100.0),
-            "od_type": trial.suggest_categorical("od_type", ["Iter"]),
+            "od_type": trial.suggest_categorical("od_type", ["IncToDec"]),
             "od_wait": trial.suggest_categorical("od_wait", [30]),
-            # "od_pval": trial.suggest_categorical("od_pval", [1e-10]),
+            "od_pval": trial.suggest_categorical("od_pval", [1e-10]),
             "eval_metric": trial.suggest_categorical("eval_metric", ["MCC"]),
             # "cat_features": trial.suggest_categorical("cat_features", [cat_features])
         }

@@ -4,6 +4,7 @@ import pandas as pd
 from catboost import CatBoostClassifier  # noqa: F401
 from lightgbm import LGBMClassifier  # noqa: F401
 from sklearn.ensemble import VotingClassifier
+from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.utils.class_weight import compute_sample_weight
 from xgboost import XGBClassifier
@@ -129,8 +130,10 @@ def get_classifier(use_gpu=True):
             ),
             (
                 "catboost",
-                CatBoostClassifier(
-                    **catboost_params,
+                OneVsRestClassifier(
+                    CatBoostClassifier(
+                        **catboost_params,
+                    )
                 ),
             ),
             (
