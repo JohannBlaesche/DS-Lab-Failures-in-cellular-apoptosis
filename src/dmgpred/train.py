@@ -149,7 +149,7 @@ def train(X_train: pd.DataFrame, y_train: pd.DataFrame, use_gpu=True, clf=None):
     A seperate evaluation is done using cross-validation.
     """
     if clf is None:
-        clf = get_classifier(X_train, use_gpu=use_gpu)
+        clf = get_classifier(use_gpu=use_gpu)
     pipe = get_pipeline(X_train, clf=clf)
     pipe.fit(X_train, y_train)
     return pipe
