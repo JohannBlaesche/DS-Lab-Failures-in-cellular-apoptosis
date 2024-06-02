@@ -84,13 +84,14 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
     )
 
 
-def train(X_train: pd.DataFrame, y_train: pd.DataFrame, use_gpu=True):
+def train(X_train: pd.DataFrame, y_train: pd.DataFrame, use_gpu=True, clf=None):
     """Train the model on the full dataset.
 
     This model is used to predict the damage grade of the test data.
     A seperate evaluation is done using cross-validation.
     """
-    clf = get_classifier(X_train, use_gpu=use_gpu)
+    if clf is None:
+        clf = get_classifier(X_train, use_gpu=use_gpu)
     pipe = get_pipeline(X_train, clf=clf)
     pipe.fit(X_train, y_train)
     return pipe
