@@ -11,9 +11,9 @@ def get_catboost_param_space(trial, use_gpu=True):
     param_space = {
         "iterations": trial.suggest_int("iterations", 100_000, 100_000),
         "logging_level": trial.suggest_categorical("logging_level", ["Silent"]),
-        "learning_rate": trial.suggest_float("learning_rate", 0.05, 0.05),
+        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.05),
         "auto_class_weights": trial.suggest_categorical(
-            "auto_class_weights", ["SqrtBalanced"]
+            "auto_class_weights", ["SqrtBalanced", None]
         ),
         "random_seed": trial.suggest_categorical("random_seed", [0]),
         "use_best_model": trial.suggest_categorical("use_best_model", [True]),
@@ -22,8 +22,6 @@ def get_catboost_param_space(trial, use_gpu=True):
         "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1e-2, 5.0, log=True),
         "bagging_temperature": trial.suggest_float("bagging_temperature", 0.5, 2.0),
         "random_strength": trial.suggest_float("random_strength", 0.0, 1.0),
-        # "subsample": trial.suggest_float("subsample", 0.4, 1.0),
-        # "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.4, 1.0),
         "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 20, 100),
         "border_count": trial.suggest_int("border_count", 32, 128, log=True),
         "od_type": trial.suggest_categorical("od_type", ["IncToDec"]),
