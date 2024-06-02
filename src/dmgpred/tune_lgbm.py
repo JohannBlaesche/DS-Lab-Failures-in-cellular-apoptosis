@@ -8,6 +8,7 @@ import lightgbm as lgb
 import optuna
 from lightgbm import LGBMClassifier
 from loguru import logger
+from optuna_integration import XGBoostPruningCallback
 from sklearn.metrics import matthews_corrcoef
 from sklearn.model_selection import train_test_split
 from sklearn.utils.class_weight import compute_sample_weight
@@ -53,10 +54,13 @@ def run_optimization(
         direction="maximize",
         storage=storage_name,
         load_if_exists=True,
+        pruner=optuna.pruners.MedianPruner(n_warmup_steps=20),
     )
 
     logger.info(f"Starting Hyperparameter Optimization with {n_trials} trials...")
-    study.optimize(objective, n_trials=n_trials, show_progress_bar=True, timeout=3000)
+    study.optimize(
+        objective, n_trials=n_trials, show_progress_bar=True, timeout=1 * 60 * 60
+    )
 
     best_params = study.best_params
     logger.info(f"Study completed with best score: {study.best_value:.4f}")
@@ -98,7 +102,7 @@ def get_lgbm_param_space(trial, use_gpu=True, random_state=0):
     max_depth = trial.suggest_int("max_depth", 8, 63)
     num_leaves = trial.suggest_int("num_leaves", 7, 3000)
     device = "gpu" if use_gpu else "cpu"
-    n_jobs = 1 if use_gpu else -1
+    n_jobs = -1
     param_space = {
         "objective": trial.suggest_categorical("objective", ["multiclass"]),
         "num_class": trial.suggest_categorical("num_class", [3]),
@@ -111,7 +115,7 @@ def get_lgbm_param_space(trial, use_gpu=True, random_state=0):
         "num_leaves": num_leaves,
         "max_depth": max_depth,
         "n_estimators": trial.suggest_int("n_estimators", 100_000, 100_000),
-        "learning_rate": trial.suggest_float("learning_rate", 0.10, 0.10),
+        "learning_rate": trial.suggest_float("learning_rate", 0.05, 0.05),
         "subsample": trial.suggest_float("subsample", 0.4, 1.0),
         "colsample_bytree": trial.suggest_float("colsample_bytree", 0.4, 1.0),
         "reg_alpha": trial.suggest_float("reg_alpha", 1e-3, 2.0, log=True),
@@ -156,7 +160,8 @@ def get_xgb_objective(X_train, y_train, X_val, y_val, use_gpu=True):
         """Tune LGBM."""
         param_space = get_xgb_param_space(trial, use_gpu=use_gpu)
         sample_weight = compute_sample_weight(class_weight="balanced", y=y_train)
-        clf = XGBClassifier(**param_space)
+        pruning_callback = XGBoostPruningCallback(trial, "validation_0-mlogloss")
+        clf = XGBClassifier(**param_space, callbacks=[pruning_callback])
         model = get_pipeline(X_train, clf)
         model.fit(
             X_train,

@@ -93,9 +93,9 @@ def main(add_metrics, n_folds, log_level, no_gpu, tune, n_trials):
             X_train, y_train, n_trials=n_trials, use_gpu=use_gpu, study_name="xgb"
         )
 
-        run_optimization(
-            X_train, y_train, n_trials=n_trials, use_gpu=use_gpu, study_name="lgbm"
-        )
+        # run_optimization(
+        #     X_train, y_train, n_trials=n_trials, use_gpu=use_gpu, study_name="lgbm"
+        # )
 
     logger.info("Training the model on full dataset...")
     model = train(X_train, y_train, use_gpu=use_gpu)
