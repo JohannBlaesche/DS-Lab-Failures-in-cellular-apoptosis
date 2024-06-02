@@ -3,14 +3,14 @@
 import joblib
 import optuna
 from catboost import CatBoostClassifier
-from imblearn.pipeline import Pipeline
 from loguru import logger
 from optuna.pruners import SuccessiveHalvingPruner
 from sklearn.metrics import matthews_corrcoef
 from sklearn.model_selection import train_test_split
 
-from dmgpred.featurize import get_encoder
-from dmgpred.train import get_normalizer, get_pipeline
+from dmgpred.train import get_pipeline
+
+# set_config(enable_metadata_routing=True)
 
 
 def tune_optuna(X, y, n_trials=100, random_state=0):
@@ -20,10 +20,14 @@ def tune_optuna(X, y, n_trials=100, random_state=0):
         X, y, test_size=0.2, random_state=random_state, stratify=y
     )
 
+    cat_features = X.select_dtypes(include=["category", "object"]).columns.to_numpy()
+    print(cat_features)
+
     # TODO: create notebook for viszualization of optuna study
     #       (to choose better parameter ranges)
     # TODO: train val split in optuna
     # TODO: catboost cat_features without preprocessing
+    #       --> error when defining cat_features
     def objective(trial):
         """Tune Catboost."""
         space = {
@@ -43,20 +47,21 @@ def tune_optuna(X, y, n_trials=100, random_state=0):
             "od_wait": trial.suggest_categorical("od_wait", [50]),
             "od_pval": trial.suggest_categorical("od_val", [1e-10]),
             "eval_metric": trial.suggest_categorical("od_metric", ["MCC"]),
+            # "cat_features": trial.suggest_categorical("cat_features", [cat_features])
         }
 
-        pre_Pipeline = Pipeline(
-            [
-                ("normalizer", get_normalizer()),
-                ("encoder", get_encoder(X_train)),
-            ],
-            verbose=False,
-        )
-        fitted_pre_pipeline = pre_Pipeline.fit(X_train, y_train)
-        X_test_fitted = fitted_pre_pipeline.transform(X_test)
+        # pre_Pipeline = Pipeline(
+        #     [
+        #         ("normalizer", get_normalizer()),
+        #         ("encoder", get_encoder(X_train)),
+        #     ],
+        #     verbose=False,
+        # )
+        # fitted_pre_pipeline = pre_Pipeline.fit(X_train, y_train)
+        # X_test_fitted = fitted_pre_pipeline.transform(X_test)
         clf = CatBoostClassifier(**space)
         model = get_pipeline(X_train, clf)
-        model.fit(X_train, y_train, clf__eval_set=(X_test_fitted, y_test))
+        model.fit(X_train, y_train, clf__eval_set=(X_test, y_test))
         y_pred = model.predict(X_test)
         score = matthews_corrcoef(y_test, y_pred)
         return score
@@ -75,3 +80,71 @@ def tune_optuna(X, y, n_trials=100, random_state=0):
 
     joblib.dump(study, "./output/catboost_study.pkl")
     return CatBoostClassifier(**best_params)
+
+
+# # https://scikit-learn.org/stable/auto_examples/miscellaneous/plot_metadata_routing.html
+# class RouterConsumerClassifier(MetaEstimatorMixin, ClassifierMixin, BaseEstimator):
+
+#     def __init__(self, estimator):
+#         self.estimator = estimator
+
+#     def get_metadata_routing(self):
+#         router = (
+#             MetadataRouter(owner=self.__class__.__name__)
+#             # defining metadata routing request values for usage in the meta-estimator
+#             .add_self_request(self)
+#             # defining metadata routing request values for usage in the sub-estimator
+#             .add(
+#                 estimator=self.estimator,
+#                 method_mapping=MethodMapping()
+#                 .add(caller="fit", callee="fit")
+#                 .add(caller="predict", callee="predict")
+#                 .add(caller="score", callee="score")
+#                 .add(caller="predict_proba", callee="predict_proba")
+#             )
+#         )
+#         return router
+
+#     # Since `sample_weight` is used and consumed here, it should be defined as
+#     # an explicit argument in the method's signature. All other metadata which
+#     # are only routed, will be passed as `**fit_params`:
+#     def fit(self, X, y, eval_set, **fit_params):
+#         if self.estimator is None:
+#             raise ValueError("estimator cannot be None!")
+
+#         # check_metadata(self, eval_set=eval_set)
+
+#         # We add `eval_set` to the `fit_params` dictionary.
+#         if eval_set is not None:
+#             fit_params["eval_set"] = eval_set
+
+#         request_router = get_routing_for_object(self)
+#         request_router.validate_metadata(params=fit_params, method="fit")
+#         routed_params = request_router.route_params(params=fit_params,
+#                                                       caller="fit")
+#         self.estimator_ = clone(self.estimator).fit(X, y,
+#                                                     **routed_params.estimator.fit)
+#         self.classes_ = self.estimator_.classes_
+#         return self
+
+#     def predict(self, X, **predict_params):
+#         check_is_fitted(self)
+#         # As in `fit`, we get a copy of the object's MetadataRouter,
+#         request_router = get_routing_for_object(self)
+#         # we validate the given metadata,
+#         request_router.validate_metadata(params=predict_params, method="predict")
+#         # and then prepare the input to the underlying ``predict`` method.
+#         routed_params = request_router.route_params(
+#             params=predict_params, caller="predict"
+#         )
+#         return self.estimator_.predict(X, **routed_params.estimator.predict)
+
+#     def predict_proba(self, X, **predict_params):
+#         request_router = get_routing_for_object(self)
+#         request_router.validate_metadata(params=predict_params,#
+#                                           method="predict_proba")
+#         routed_params = request_router.route_params(
+#             params=predict_params, caller="predict_proba"
+#         )
+#         return self.estimator_.predict_proba(X,
+#                               **routed_params.estimator.predict_proba)

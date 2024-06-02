@@ -84,7 +84,6 @@ def main(add_metrics, n_folds, log_level, use_gpu):
     X_train, X_test = clean(X_train, X_test)
     X_train, X_test = featurize(X_train, X_test)
 
-    # clf = tune(X_train, y_train, n_trials=100)
     clf = tune_optuna(X_train, y_train, n_trials=200)
 
     logger.info("Training the model on full dataset...")

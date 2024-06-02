@@ -3,10 +3,7 @@
 import pandas as pd
 from catboost import CatBoostClassifier
 from imblearn.pipeline import Pipeline
-from lightgbm import LGBMClassifier
 from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import VotingClassifier
-from xgboost import XGBClassifier
 
 from dmgpred.cleaning import get_normalizer
 from dmgpred.featurize import get_encoder
@@ -32,46 +29,54 @@ def get_classifier(X_train: pd.DataFrame, use_gpu=True):
     """Return the classifier used in the pipeline."""
     if use_gpu:
         task_type = "GPU"
-        device = "cuda"
-        lgbm_device = "gpu"
+        device = "cuda"  # noqa: F841
+        lgbm_device = "gpu"  # noqa: F841
     else:
         task_type = "CPU"
-        device = "cpu"
-        lgbm_device = "cpu"
+        device = "cpu"  # noqa: F841
+        lgbm_device = "cpu"  # noqa: F841
 
-    return VotingClassifier(
-        estimators=[
-            (
-                "xgb",
-                XGBClassifier(
-                    enable_categorical=True,
-                    n_estimators=1000,
-                    tree_method="hist",
-                    device=device,
-                    random_state=0,
-                ),
-            ),
-            (
-                "catboost",
-                CatBoostClassifier(
-                    n_estimators=1000,
-                    task_type=task_type,
-                    verbose=False,
-                    random_state=0,
-                ),
-            ),
-            (
-                "lgbm",
-                LGBMClassifier(
-                    n_estimators=1000,
-                    random_state=0,
-                    class_weight="balanced",
-                    device=lgbm_device,
-                    verbose=0,
-                ),
-            ),
-        ],
-        voting="soft",
+    # return VotingClassifier(
+    #     estimators=[
+    #         (
+    #             "xgb",
+    #             XGBClassifier(
+    #                 enable_categorical=True,
+    #                 n_estimators=1000,
+    #                 tree_method="hist",
+    #                 device=device,
+    #                 random_state=0,
+    #             ),
+    #         ),
+    #         (
+    #             "catboost",
+    #             CatBoostClassifier(
+    #                 n_estimators=1000,
+    #                 task_type=task_type,
+    #                 verbose=False,
+    #                 random_state=0,
+    #             ),
+    #         ),
+    #         (
+    #             "lgbm",
+    #             LGBMClassifier(
+    #                 n_estimators=1000,
+    #                 random_state=0,
+    #                 class_weight="balanced",
+    #                 device=lgbm_device,
+    #                 verbose=0,
+    #             ),
+    #         ),
+    #     ],
+    #     voting="soft",
+    # )
+    return CatBoostClassifier(
+        n_estimators=1000,
+        task_type=task_type,
+        verbose=False,
+        random_state=0,
+        # cat_features=X_train.select_dtypes(include=["category", "object"])
+        # .columns.to_numpy()
     )
 
 
