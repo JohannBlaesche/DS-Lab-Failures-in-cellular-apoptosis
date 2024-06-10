@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "charliermarsh.ruff",
+    "aaron-bond.better-comments",
+    "editorconfig.editorconfig",
+    "tamasfe.even-better-toml",
+    "yzhang.markdown-all-in-one",
+    "ms-python.python",
+    "redhat.vscode-yaml",
+    "wayou.vscode-todo-highlight"
+  ]
+}
