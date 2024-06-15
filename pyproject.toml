@@ -3,9 +3,9 @@ name = "apoptosis-failure-prediction"
 dynamic = ['version']
 description = "Task 2 - Detect failures in cellular apoptosis"
 authors = [
-    {name = "Isabelle Konrad", email="uupor@student.kit.edu"},
-    {name = "Johann Bläsche", email="usqeb@student.kit.edu"},
-    {name = "Moritz Mistol", email="usort@student.kit.edu"},
+    { name = "Isabelle Konrad", email = "uupor@student.kit.edu" },
+    { name = "Johann Bläsche", email = "usqeb@student.kit.edu" },
+    { name = "Moritz Mistol", email = "usort@student.kit.edu" },
 ]
 requires-python = ">=3.10"
 readme = "README.md"
@@ -18,6 +18,8 @@ dependencies = [
     "seaborn>=0.13.2",
     "click>=8.1.7",
     "loguru>=0.7.2",
+    "polars>=0.20.31",
+    "pyarrow>=16.1.0"
 ]
 
 [tool.setuptools_scm]
@@ -26,13 +28,7 @@ dependencies = [
 apopfail = "apopfail.__main__:main"
 
 [project.optional-dependencies]
-dev = [
-    "pytest",
-    "pre-commit",
-    "pdoc",
-    "jupyter",
-    "ruff",
-]
+dev = ["pytest", "pre-commit", "pdoc", "jupyter", "ruff"]
 
 [tool.ruff]
 line-length = 88
