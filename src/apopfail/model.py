@@ -1,14 +1,15 @@
 """Training step in the pipeline."""
 
 from imblearn.pipeline import Pipeline
+from imblearn.under_sampling import RandomUnderSampler
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
 
 
-def train():
-    """Run the training step."""
-    pass
+def train(model, X, y=None):
+    """Fit the model on the dataset."""
+    return model.fit(X, y)
 
 
 def get_pipeline(clf=None) -> Pipeline:
@@ -29,6 +30,7 @@ def get_pipeline(clf=None) -> Pipeline:
         ("imputer", SimpleImputer(strategy="mean")),
         ("scaler", StandardScaler()),
         ("reducer", PCA(n_components=0.95)),
+        ("sampler", RandomUnderSampler()),
     ]
 
     if clf is not None:
