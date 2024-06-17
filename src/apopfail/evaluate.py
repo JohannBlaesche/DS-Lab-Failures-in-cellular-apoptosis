@@ -1,6 +1,6 @@
 """Evaluation step in the pipeline."""
 
 
-def evaluate(y_pred, y_true):
+def evaluate(model, X, y):
     """Run the evaluation."""
     pass
