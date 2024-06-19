@@ -59,7 +59,7 @@ select = [
     # pandas related
     "PD",
 ]
-extend-ignore = ["D203", "D213"]
+extend-ignore = ["D203", "D213", "PD901"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
