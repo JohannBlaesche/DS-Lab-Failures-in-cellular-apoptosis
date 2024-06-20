@@ -23,6 +23,8 @@ def evaluate(model: BaseEstimator, X: pd.DataFrame, y: pd.DataFrame) -> dict:
     """
     logger.info("Running evaluation with train-test-split.")
     metrics = {"Average Precision": "average_precision", "ROC AUC": "roc_auc"}
+    # for IsolationForest evaluation we need to change the y
+    y = y.map({0: 1, 1: -1})
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, train_size=0.8, stratify=y
     )
