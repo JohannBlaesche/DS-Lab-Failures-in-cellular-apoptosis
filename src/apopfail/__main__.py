@@ -12,7 +12,7 @@ from sklearn import set_config
 from sklearn.ensemble import IsolationForest
 
 from apopfail.evaluate import evaluate
-from apopfail.model import get_pipeline
+from apopfail.model import get_pipeline, train
 
 DATA_PATH = "./data"
 OUTPUT_PATH = "./output"
@@ -47,13 +47,12 @@ def main(log_level):
     clf = IsolationForest()  # baseline classifier to start with
     model = get_pipeline(clf=clf)
     logger.info("Training the model on full dataset...")
-    model.fit(X_train, y_train)
+    model = train(model, X_train, y_train)
     y_pred = model.predict(X_test)
     y_pred = pd.Series(y_pred, index=X_test.index)
     y_pred = y_pred.map({-1: "active", 1: "inactive"})
     logger.info("Evaluating the model...")
-    eval_results = evaluate(model, X_train, y_train)
-    print(eval_results)
+    _ = evaluate(model, X_train, y_train)
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
     submission = pd.DataFrame({TARGET: y_pred}).set_index(X_test.index)
     submission.to_csv(SUBMISSION_PATH)
