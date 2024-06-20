@@ -22,20 +22,17 @@ def evaluate(model: BaseEstimator, X: pd.DataFrame, y: pd.DataFrame) -> dict:
 
     """
     logger.info("Running evaluation with train-test-split.")
-    metrics = ["average_precision", "roc_auc"]
+    metrics = {"Average Precision": "average_precision", "ROC AUC": "roc_auc"}
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, train_size=0.8, stratify=y
     )
     scoring = _check_scoring(metrics)
 
-    train_probs = model.predict_proba(X_train)[:, 1]
-    test_probs = model.predict_proba(X_test)[:, 1]
-
     result_dict = {}
 
     for key, scorer in scoring.items():
-        train_score = scorer(y_train, train_probs)
-        test_score = scorer(y_test, test_probs)
+        train_score = scorer(model, X_train, y_train)
+        test_score = scorer(model, X_test, y_test)
         logger.success(f"Train-{key}: {train_score}")
         logger.success(f"Test-{key}: {test_score}")
         result_dict[f"Train-{key}"] = train_score
