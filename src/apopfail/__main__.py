@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from sklearn import set_config
 from sklearn.ensemble import IsolationForest
 
 from apopfail.evaluate import evaluate
@@ -20,6 +21,7 @@ TARGET = "5408"
 
 def main():
     """Run Prediction Pipeline."""
+    set_config(transform_output="pandas")
     X_test = pd.read_parquet(TEST_VALUES_PATH)
     X_train = pd.read_parquet(TRAIN_VALUES_PATH)
     y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col=0, names=["target"], skiprows=1)[
@@ -30,11 +32,13 @@ def main():
     model = get_pipeline(clf=clf)
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
+    y_pred = pd.Series(y_pred, index=X_test.index)
+    y_pred = y_pred.map({-1: "active", 1: "inactive"})
     eval_results = evaluate(model, X_train, y_train)
     print(eval_results)
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
-    submission = pd.DataFrame({X_test.index, y_pred.reshape(-1)})
-    submission.to_csv(SUBMISSION_PATH, index=False)
+    submission = pd.DataFrame({TARGET: y_pred}).set_index(X_test.index)
+    submission.to_csv(SUBMISSION_PATH)
 
 
 if __name__ == "__main__":
