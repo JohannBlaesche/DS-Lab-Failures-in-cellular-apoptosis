@@ -12,6 +12,17 @@ def train(model, X, y=None):
     return model.fit(X, y)
 
 
+def clean(X, y):
+    """Remove rows with only nans and duplicate rows."""
+    X = X.join(y)
+    X = X.dropna(how="all")
+    X = X.dropna(how="all", axis=1)
+    X = X.drop_duplicates()
+    y = X["target"]
+    X = X.drop(columns=["target"])
+    return X, y
+
+
 def get_pipeline(clf=None) -> Pipeline:
     """Get prediction pipeline.
 
@@ -27,6 +38,7 @@ def get_pipeline(clf=None) -> Pipeline:
         Pipeline to use in the prediction step.
     """
     steps = [
+        # ("cleaner", FunctionSampler(validate=False,func=clean)),
         ("imputer", SimpleImputer(strategy="mean")),
         ("scaler", StandardScaler()),
         ("reducer", PCA(n_components=0.95)),
