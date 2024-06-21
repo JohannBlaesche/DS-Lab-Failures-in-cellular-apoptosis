@@ -4,7 +4,7 @@ from imblearn.pipeline import Pipeline
 from imblearn.under_sampling import RandomUnderSampler
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import FunctionTransformer, StandardScaler
+from sklearn.preprocessing import StandardScaler
 
 
 def train(model, X, y=None):
@@ -12,11 +12,15 @@ def train(model, X, y=None):
     return model.fit(X, y)
 
 
-def clean(X):
+def clean(X, y):
     """Remove rows with only nans and duplicate rows."""
+    X = X.join(y)
     X = X.dropna(how="all")
+    X = X.dropna(how="all", axis=1)
     X = X.drop_duplicates()
-    return X
+    y = X["target"]
+    X = X.drop(columns=["target"])
+    return X, y
 
 
 def get_pipeline(clf=None) -> Pipeline:
@@ -34,7 +38,7 @@ def get_pipeline(clf=None) -> Pipeline:
         Pipeline to use in the prediction step.
     """
     steps = [
-        ("cleaner", FunctionTransformer(func=clean)),
+        # ("cleaner", FunctionSampler(validate=False,func=clean)),
         ("imputer", SimpleImputer(strategy="mean")),
         ("scaler", StandardScaler()),
         ("reducer", PCA(n_components=0.95)),
