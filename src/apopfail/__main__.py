@@ -12,11 +12,11 @@ from sklearn import set_config
 from sklearn.ensemble import IsolationForest
 
 from apopfail.evaluate import evaluate
-from apopfail.model import get_pipeline, train
+from apopfail.model import clean, get_pipeline, train
 
 DATA_PATH = "./data"
 OUTPUT_PATH = "./output"
-TEST_VALUES_PATH = f"{DATA_PATH}/test_set_p53mutant.parquet"
+TEST_VALUES_PATH = f"{DATA_PATH}/test_data_p53_mutant.parquet"
 TRAIN_VALUES_PATH = f"{DATA_PATH}/train_set_p53mutant.parquet"
 TRAIN_LABELS_PATH = f"{DATA_PATH}/train_labels_p53mutant.csv"
 SUBMISSION_PATH = f"{OUTPUT_PATH}/Mandalorians_prediction.csv"
@@ -44,6 +44,7 @@ def main(log_level):
         "target"
     ]
     y_train = y_train.map({"inactive": 0, "active": 1}).astype(np.int8)
+    X_train, y_train = clean(X_train, y_train)
     clf = IsolationForest()  # baseline classifier to start with
     model = get_pipeline(clf=clf)
     logger.info("Training the model on full dataset...")
