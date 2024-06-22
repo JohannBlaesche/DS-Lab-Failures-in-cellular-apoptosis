@@ -1,10 +1,9 @@
 """Training step in the pipeline."""
 
 from imblearn.pipeline import Pipeline
-from imblearn.under_sampling import RandomUnderSampler
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import RobustScaler
 
 
 def train(model, X, y=None):
@@ -23,14 +22,20 @@ def clean(X, y):
     return X, y
 
 
-def get_pipeline(clf=None) -> Pipeline:
+def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeline:
     """Get prediction pipeline.
 
     Parameters
     ----------
-    clf : object, optional
+    clf : BaseEstimator, optional
         Classifier to use in the pipeline.
         If None, the pipeline will not include a classifier.
+    scaler : scikit learn transformer, optional
+        If None, use RobustScaler as default.
+    reducer : scikit learn transformer, optional
+        If None, use PCA with n_components=0.99
+    sampler: imblearn sampler, optional
+        If None, no sampling is done in the pipeline.
 
     Returns
     -------
@@ -38,12 +43,13 @@ def get_pipeline(clf=None) -> Pipeline:
         Pipeline to use in the prediction step.
     """
     steps = [
-        # ("cleaner", FunctionSampler(validate=False,func=clean)),
+        # ("cleaner", FunctionSampler(validate=False, func=clean)),
         ("imputer", SimpleImputer(strategy="mean")),
-        ("scaler", StandardScaler()),
-        ("reducer", PCA(n_components=0.95)),
-        ("sampler", RandomUnderSampler()),
+        ("scaler", scaler or RobustScaler()),
+        ("reducer", reducer or PCA(n_components=0.99)),
     ]
+    if sampler is not None:
+        steps.append(("sampler", sampler))
 
     if clf is not None:
         steps.append(("clf", clf))
