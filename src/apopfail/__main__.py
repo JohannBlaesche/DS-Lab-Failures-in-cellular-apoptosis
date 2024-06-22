@@ -53,7 +53,7 @@ def main(log_level):
     y_pred = pd.Series(y_pred, index=X_test.index)
     y_pred = y_pred.map({-1: "active", 1: "inactive"})
     logger.info("Evaluating the model...")
-    _ = evaluate(model, X_train, y_train)
+    _ = evaluate(model, X_train, y_train, n_folds=5)
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
     submission = pd.DataFrame({TARGET: y_pred}).set_index(X_test.index)
     submission.to_csv(SUBMISSION_PATH)
