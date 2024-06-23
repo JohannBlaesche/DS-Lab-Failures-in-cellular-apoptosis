@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from loguru import logger
 from sklearn import set_config
-from sklearn.ensemble import IsolationForest
+from sklearn.linear_model import LogisticRegression
 
 from apopfail.evaluate import evaluate
 from apopfail.model import clean, get_pipeline, train
@@ -45,13 +45,13 @@ def main(log_level):
     ]
     y_train = y_train.map({"inactive": 0, "active": 1}).astype(np.int8)
     X_train, y_train = clean(X_train, y_train)
-    clf = IsolationForest()  # baseline classifier to start with
+    clf = LogisticRegression()  # baseline classifier to start with
     model = get_pipeline(clf=clf)
     logger.info("Training the model on full dataset...")
     model = train(model, X_train, y_train)
     y_pred = model.predict(X_test)
     y_pred = pd.Series(y_pred, index=X_test.index)
-    y_pred = y_pred.map({-1: "active", 1: "inactive"})
+    # y_pred = y_pred.map({-1: "active", 1: "inactive"})
     logger.info("Evaluating the model...")
     _ = evaluate(model, X_train, y_train, n_folds=5)
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)

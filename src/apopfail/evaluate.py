@@ -6,7 +6,14 @@ import numpy as np
 import pandas as pd
 from loguru import logger
 from sklearn.base import BaseEstimator
-from sklearn.metrics import get_scorer, get_scorer_names
+from sklearn.metrics import (
+    average_precision_score,
+    fbeta_score,
+    get_scorer,
+    get_scorer_names,
+    make_scorer,
+    recall_score,
+)
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
 
@@ -33,18 +40,21 @@ def evaluate(
         ValueError: If the number of folds is less than 0.
 
     """
-    metrics = {"Average Precision": "average_precision", "ROC AUC": "roc_auc"}
+    metrics = {
+        "ROC AUC": "roc_auc",
+        "Average Precision": make_scorer(average_precision_score, pos_label=1),
+        "Recall (Sensitivity)": make_scorer(recall_score, pos_label=1),
+        "F2 Score": make_scorer(fbeta_score, beta=2, pos_label=1),
+    }
     # for IsolationForest evaluation we need to change the y
-    y = y.map({0: 1, 1: -1})
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, train_size=0.8, stratify=y
-    )
+    # y = y.map({0: 1, 1: -1})
+
     scoring = _check_scoring(metrics)
 
     result_dict = {}
-    if n_folds >= 1:
+    if n_folds > 1:
         cv = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=0)
-        results = cross_validate_custom(model, X_train, y_train, cv=cv, scoring=scoring)
+        results = cross_validate_custom(model, X, y, cv=cv, scoring=scoring)
         for key in scoring:
             scores = results[f"test_{key}"]
             logger.success(f"{key}: {scores.mean(): .4f} (± {scores.std(): .4f})")
@@ -57,14 +67,6 @@ def evaluate(
             logger.success(f"{key}: {scores: .4f}")
             scores = results[f"train_{key}"]
             logger.success(f"Train {key}: {scores: .4f}")
-
-    # for key, scorer in scoring.items():
-    #     train_score = scorer(model, X_train, y_train)
-    #     test_score = scorer(model, X_test, y_test)
-    #     logger.success(f"Train-{key}: {train_score}")
-    #     logger.success(f"Test-{key}: {test_score}")
-    #     result_dict[f"Train-{key}"] = train_score
-    #     result_dict[f"Test-{key}"] = test_score
 
     return result_dict
 
