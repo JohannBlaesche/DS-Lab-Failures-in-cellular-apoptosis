@@ -4,6 +4,9 @@
 
 After cloning the repository, place the datafiles inside the `data` directory.
 
+The training data must be named `train_set_p53mutant.parquet` with labels `train_labels_p53mutant.csv`.
+The test data must be named `test_data_p53_mutant.parquet`
+
 To run the the pipeline with environment setup and installation, use the following command if you are on Linux/MacOS:
 
 ```shell
@@ -16,7 +19,12 @@ Alternatively, run the pipeline manually with `apopfail` after having installed 
 
 ## Pipeline CLI arguments
 
-not implemented yet
+To see all available arguments, run:
+```shell
+apopfail --help
+```
+
+Currently, only the logging level can be changed.
 
 ## Development Guide
 
