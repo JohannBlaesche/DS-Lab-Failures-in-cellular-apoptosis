@@ -22,6 +22,10 @@ dependencies = [
     "pyarrow>=16.1.0",
     "imbalanced-learn>=0.12.3",
     "umap-learn>=0.5.6",
+    "pyod>=2.0.1",
+    "torch>=2.3.1",
+    "torchinfo>=1.8.0",
+    "drcomp @ git+https://github.com/MoritzM00/drcomp.git",
 ]
 
 [tool.setuptools_scm]
