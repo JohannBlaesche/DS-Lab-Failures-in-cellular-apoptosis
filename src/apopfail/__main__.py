@@ -14,6 +14,7 @@ from sklearn.linear_model import LogisticRegression
 
 from apopfail.evaluate import evaluate
 from apopfail.model import clean, get_pipeline, train
+from apopfail.utils.loading import load_data
 
 DATA_PATH = "./data"
 OUTPUT_PATH = "./output"
@@ -39,13 +40,13 @@ def main(log_level):
     start = time.perf_counter()
     set_config(transform_output="pandas")
     logger.info("Loading the data...")
-    X_test = pd.read_parquet(TEST_VALUES_PATH)
-    X_train = pd.read_parquet(TRAIN_VALUES_PATH)
-    y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col=0, names=["target"], skiprows=1)[
-        "target"
-    ]
-    y_train = y_train.map({"inactive": 0, "active": 1}).astype(np.int8)
+    X_train, X_test, y_train = load_data(root=".")
+
     X_train, y_train = clean(X_train, y_train)
+    X_test = clean(X_test)
+
+    assert X_train.columns == X_test.columns
+
     clf = LogisticRegression()  # baseline classifier to start with
     model = get_pipeline(clf=clf, sampler=SMOTE(random_state=0))
     logger.info("Training the model on full dataset...")

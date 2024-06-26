@@ -11,12 +11,16 @@ def train(model, X, y=None):
     return model.fit(X, y)
 
 
-def clean(X, y):
+def clean(X, y=None):
     """Remove rows with only nans and duplicate rows."""
-    X = X.join(y)
+    if y is not None:
+        X = X.join(y)
     X = X.dropna(how="all")
     X = X.dropna(how="all", axis=1)
     X = X.drop_duplicates()
+    if y is None:
+        return X
+
     y = X["target"]
     X = X.drop(columns=["target"])
     return X, y
