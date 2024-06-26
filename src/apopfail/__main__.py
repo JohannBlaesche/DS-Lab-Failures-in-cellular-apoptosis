@@ -7,13 +7,9 @@ from pathlib import Path
 import click
 import numpy as np
 import pandas as pd
-from imblearn.over_sampling import SMOTE
 from loguru import logger
 from sklearn import set_config
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.impute import SimpleImputer
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import RobustScaler
 from sklearn.svm import OneClassSVM
 
 from apopfail.evaluate import evaluate
@@ -41,10 +37,17 @@ TARGET = "5408"
 @click.option(
     "--mode",
     "-m",
-    type=click.Choice(["occ", "binary"]),
+    type=click.Choice(["occ", "binary"], case_sensitive=False),
     default="occ",
 )
-def main(log_level, mode):
+@click.option(
+    "--subsample",
+    "-s",
+    type=float,
+    default=None,
+    help="Subsample the data with the given ratio to decrease training time for testing purposes.",  # noqa: E501
+)
+def main(log_level, mode, subsample):
     """Run Prediction Pipeline."""
     setup_logger(log_level)
     np.random.seed(0)
@@ -53,15 +56,10 @@ def main(log_level, mode):
     logger.info("Loading the data...")
     X_train, X_test, y_train = load_data(root=".", mode=mode)
 
-    X_train = X_train.iloc[:2000]
-    y_train = y_train.iloc[:2000]
-
-    X_train, y_train = clean(X_train, y_train)
+    X_train, y_train = clean(X_train, y_train, subsample=subsample)
 
     if mode == "occ":
-        model = make_pipeline(
-            SimpleImputer(), RobustScaler(), OneClassSVM(kernel="linear")
-        )
+        model = get_pipeline(clf=OneClassSVM(kernel="linear"))
         logger.info("Running the OCC pipeline...")
         model = occ(model, X_train, y_train)
         y_pred = model.predict(X_test)
@@ -70,11 +68,12 @@ def main(log_level, mode):
 
     elif mode == "binary":
         clf = RandomForestClassifier()
-        model = get_pipeline(clf=clf, sampler=SMOTE(random_state=0))
+        model = get_pipeline(clf=clf)
         logger.info("Training the model on full dataset...")
         model = train(model, X_train, y_train)
         y_pred = model.predict(X_test)
         y_pred = pd.Series(y_pred, index=X_test.index)
+        y_pred = y_pred.map({0: "inactive", 1: "active"})
 
         logger.info("Evaluating the model...")
         _ = evaluate(model, X_train, y_train, n_folds=5)

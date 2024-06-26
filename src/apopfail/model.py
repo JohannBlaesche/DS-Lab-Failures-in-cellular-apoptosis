@@ -1,6 +1,7 @@
 """Training step in the pipeline."""
 
 from imblearn.pipeline import Pipeline
+from loguru import logger
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import RobustScaler
@@ -11,12 +12,17 @@ def train(model, X, y=None):
     return model.fit(X, y)
 
 
-def clean(X, y):
+def clean(X, y, subsample: float | None = None):
     """Remove rows with only nans and duplicate rows."""
     X = X.join(y)
     X = X.dropna(how="all")
     X = X.dropna(how="all", axis=1)
     X = X.drop_duplicates()
+
+    if subsample is not None:
+        logger.warning(f"Subsampling the data with ratio {subsample}")
+        X = X.sample(frac=subsample, random_state=0)
+
     y = X["target"]
     X = X.drop(columns=["target"])
     return X, y
