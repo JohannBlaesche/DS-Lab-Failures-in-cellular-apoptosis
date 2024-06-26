@@ -10,10 +10,15 @@ import pandas as pd
 from imblearn.over_sampling import SMOTE
 from loguru import logger
 from sklearn import set_config
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import RobustScaler
+from sklearn.svm import OneClassSVM
 
 from apopfail.evaluate import evaluate
 from apopfail.model import clean, get_pipeline, train
+from apopfail.occ import occ
 from apopfail.utils.loading import load_data
 
 DATA_PATH = "./data"
@@ -46,30 +51,38 @@ def main(log_level, mode):
     start = time.perf_counter()
     set_config(transform_output="pandas")
     logger.info("Loading the data...")
-    X_train, X_test, y_train = load_data(root=".")
+    X_train, X_test, y_train = load_data(root=".", mode=mode)
+
+    X_train = X_train.iloc[:2000]
+    y_train = y_train.iloc[:2000]
 
     X_train, y_train = clean(X_train, y_train)
-    X_test = clean(X_test)
-
-    assert X_train.columns == X_test.columns
 
     if mode == "occ":
-        pass
+        model = make_pipeline(
+            SimpleImputer(), RobustScaler(), OneClassSVM(kernel="linear")
+        )
+        logger.info("Running the OCC pipeline...")
+        model = occ(model, X_train, y_train)
+        y_pred = model.predict(X_test)
+        y_pred = pd.Series(y_pred, index=X_test.index)
+        y_pred = y_pred.map({-1: "active", 1: "inactive"})
+
     elif mode == "binary":
-        clf = LogisticRegression()  # baseline classifier to start with
+        clf = RandomForestClassifier()
         model = get_pipeline(clf=clf, sampler=SMOTE(random_state=0))
         logger.info("Training the model on full dataset...")
         model = train(model, X_train, y_train)
         y_pred = model.predict(X_test)
         y_pred = pd.Series(y_pred, index=X_test.index)
+
         logger.info("Evaluating the model...")
         _ = evaluate(model, X_train, y_train, n_folds=5)
     else:
         raise ValueError("Invalid mode.")
 
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
-    submission = pd.DataFrame({TARGET: y_pred}).set_index(X_test.index)
-    submission.to_csv(SUBMISSION_PATH)
+    y_pred.to_csv(SUBMISSION_PATH)
     logger.info(f"Submission saved to {SUBMISSION_PATH}")
     end = time.perf_counter()
     logger.success(f"Finished in {end - start: .2f} seconds.")

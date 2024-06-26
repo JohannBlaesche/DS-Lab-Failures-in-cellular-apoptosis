@@ -3,7 +3,7 @@
 import pandas as pd
 
 
-def load_data(root="."):
+def load_data(root=".", mode="occ"):
     """Load the data.
 
     Parameters
@@ -21,5 +21,10 @@ def load_data(root="."):
     y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col=0, names=["target"], skiprows=1)[
         "target"
     ]
-    y_train = y_train.map({"inactive": 0, "active": 1}).astype("int8")
+    if mode == "occ":
+        y_train = y_train.map({"inactive": 1, "active": -1}).astype("int8")
+    elif mode == "binary":
+        y_train = y_train.map({"inactive": 0, "active": 1}).astype("int8")
+    else:
+        raise ValueError(f"Invalid mode: {mode}")
     return X_train, X_test, y_train
