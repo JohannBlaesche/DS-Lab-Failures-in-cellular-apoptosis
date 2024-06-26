@@ -7,10 +7,9 @@ from pathlib import Path
 import click
 import numpy as np
 import pandas as pd
-from imblearn.over_sampling import SMOTE
 from loguru import logger
 from sklearn import set_config
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForest
 
 from apopfail.evaluate import evaluate
 from apopfail.model import clean, get_pipeline, train
@@ -46,8 +45,8 @@ def main(log_level):
     ]
     y_train = y_train.map({"inactive": 0, "active": 1}).astype(np.int8)
     X_train, y_train = clean(X_train, y_train)
-    clf = LogisticRegression()  # baseline classifier to start with
-    model = get_pipeline(clf=clf, sampler=SMOTE(random_state=0))
+    clf = RandomForest()
+    model = get_pipeline(clf=clf)
     logger.info("Training the model on full dataset...")
     model = train(model, X_train, y_train)
     y_pred = model.predict(X_test)
