@@ -33,7 +33,13 @@ TARGET = "5408"
         ["debug", "info", "success", "warning", "error"], case_sensitive=False
     ),
 )
-def main(log_level):
+@click.option(
+    "--mode",
+    "-m",
+    type=click.Choice(["occ", "binary"]),
+    default="occ",
+)
+def main(log_level, mode):
     """Run Prediction Pipeline."""
     setup_logger(log_level)
     np.random.seed(0)
@@ -47,15 +53,20 @@ def main(log_level):
 
     assert X_train.columns == X_test.columns
 
-    clf = LogisticRegression()  # baseline classifier to start with
-    model = get_pipeline(clf=clf, sampler=SMOTE(random_state=0))
-    logger.info("Training the model on full dataset...")
-    model = train(model, X_train, y_train)
-    y_pred = model.predict(X_test)
-    y_pred = pd.Series(y_pred, index=X_test.index)
-    # y_pred = y_pred.map({-1: "active", 1: "inactive"})
-    logger.info("Evaluating the model...")
-    _ = evaluate(model, X_train, y_train, n_folds=5)
+    if mode == "occ":
+        pass
+    elif mode == "binary":
+        clf = LogisticRegression()  # baseline classifier to start with
+        model = get_pipeline(clf=clf, sampler=SMOTE(random_state=0))
+        logger.info("Training the model on full dataset...")
+        model = train(model, X_train, y_train)
+        y_pred = model.predict(X_test)
+        y_pred = pd.Series(y_pred, index=X_test.index)
+        logger.info("Evaluating the model...")
+        _ = evaluate(model, X_train, y_train, n_folds=5)
+    else:
+        raise ValueError("Invalid mode.")
+
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
     submission = pd.DataFrame({TARGET: y_pred}).set_index(X_test.index)
     submission.to_csv(SUBMISSION_PATH)
