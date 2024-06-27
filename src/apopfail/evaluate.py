@@ -12,9 +12,31 @@ from sklearn.metrics import (
     get_scorer,
     get_scorer_names,
     make_scorer,
+    precision_score,
     recall_score,
 )
 from sklearn.model_selection import StratifiedKFold, train_test_split
+
+
+def score(model, X, y, pos_label=-1):
+    """Score the model on the test set."""
+    scoring = _check_scoring(
+        {
+            "ROC AUC": "roc_auc",
+            "Average Precision": make_scorer(
+                average_precision_score, pos_label=pos_label
+            ),
+            "Recall (Sensitivity)": make_scorer(recall_score, pos_label=pos_label),
+            "Precision": make_scorer(precision_score, pos_label=pos_label),
+            "F2 Score": make_scorer(fbeta_score, beta=2, pos_label=pos_label),
+        },
+    )
+    scores = {}
+    for key, scorer in scoring.items():
+        score = scorer(model, X, y)
+        scores[key] = score
+        logger.info(f"{key}: {score:.4f}")
+    return scores
 
 
 def evaluate(

@@ -7,13 +7,15 @@ from pathlib import Path
 import click
 import numpy as np
 import pandas as pd
-from imblearn.over_sampling import SMOTE
 from loguru import logger
 from sklearn import set_config
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import OneClassSVM
 
 from apopfail.evaluate import evaluate
 from apopfail.model import clean, get_pipeline, train
+from apopfail.occ import occ
+from apopfail.utils.loading import load_data
 
 DATA_PATH = "./data"
 OUTPUT_PATH = "./output"
@@ -32,32 +34,54 @@ TARGET = "5408"
         ["debug", "info", "success", "warning", "error"], case_sensitive=False
     ),
 )
-def main(log_level):
+@click.option(
+    "--mode",
+    "-m",
+    type=click.Choice(["occ", "binary"], case_sensitive=False),
+    default="occ",
+)
+@click.option(
+    "--subsample",
+    "-s",
+    type=float,
+    default=None,
+    help="Subsample the data with the given ratio to decrease training time for testing purposes.",  # noqa: E501
+)
+def main(log_level, mode, subsample):
     """Run Prediction Pipeline."""
     setup_logger(log_level)
     np.random.seed(0)
     start = time.perf_counter()
     set_config(transform_output="pandas")
     logger.info("Loading the data...")
-    X_test = pd.read_parquet(TEST_VALUES_PATH)
-    X_train = pd.read_parquet(TRAIN_VALUES_PATH)
-    y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col=0, names=["target"], skiprows=1)[
-        "target"
-    ]
-    y_train = y_train.map({"inactive": 0, "active": 1}).astype(np.int8)
-    X_train, y_train = clean(X_train, y_train)
-    clf = LogisticRegression()  # baseline classifier to start with
-    model = get_pipeline(clf=clf, sampler=SMOTE(random_state=0))
-    logger.info("Training the model on full dataset...")
-    model = train(model, X_train, y_train)
-    y_pred = model.predict(X_test)
-    y_pred = pd.Series(y_pred, index=X_test.index)
-    # y_pred = y_pred.map({-1: "active", 1: "inactive"})
-    logger.info("Evaluating the model...")
-    _ = evaluate(model, X_train, y_train, n_folds=5)
+    X_train, X_test, y_train = load_data(root=".", mode=mode)
+
+    X_train, y_train = clean(X_train, y_train, subsample=subsample)
+
+    if mode == "occ":
+        model = get_pipeline(clf=OneClassSVM(kernel="linear"))
+        logger.info("Running the OCC pipeline...")
+        model = occ(model, X_train, y_train)
+        y_pred = model.predict(X_test)
+        y_pred = pd.Series(y_pred, index=X_test.index)
+        y_pred = y_pred.map({-1: "active", 1: "inactive"})
+
+    elif mode == "binary":
+        clf = RandomForestClassifier()
+        model = get_pipeline(clf=clf)
+        logger.info("Training the model on full dataset...")
+        model = train(model, X_train, y_train)
+        y_pred = model.predict(X_test)
+        y_pred = pd.Series(y_pred, index=X_test.index)
+        y_pred = y_pred.map({0: "inactive", 1: "active"})
+
+        logger.info("Evaluating the model...")
+        _ = evaluate(model, X_train, y_train, n_folds=5)
+    else:
+        raise ValueError("Invalid mode.")
+
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
-    submission = pd.DataFrame({TARGET: y_pred}).set_index(X_test.index)
-    submission.to_csv(SUBMISSION_PATH)
+    y_pred.to_csv(SUBMISSION_PATH)
     logger.info(f"Submission saved to {SUBMISSION_PATH}")
     end = time.perf_counter()
     logger.success(f"Finished in {end - start: .2f} seconds.")
