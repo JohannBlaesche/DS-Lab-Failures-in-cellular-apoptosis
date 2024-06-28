@@ -21,7 +21,7 @@ Alternatively, run the pipeline manually with `afp` after having installed the r
 
 To see all available arguments, run:
 ```shell
-apopfail --help
+afp --help
 ```
 
 When running the pipeline, the following arguments are available:
