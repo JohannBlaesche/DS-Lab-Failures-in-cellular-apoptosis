@@ -3,7 +3,7 @@
 import pandas as pd
 
 
-def load_data(root=".", mode="occ"):
+def load_data(root="."):
     """Load the data.
 
     Parameters
@@ -18,13 +18,11 @@ def load_data(root=".", mode="occ"):
 
     X_test = pd.read_parquet(TEST_VALUES_PATH)
     X_train = pd.read_parquet(TRAIN_VALUES_PATH)
-    y_train = pd.read_csv(TRAIN_LABELS_PATH, index_col=0, names=["target"], skiprows=1)[
-        "target"
-    ]
-    if mode == "occ":
-        y_train = y_train.map({"inactive": 1, "active": -1}).astype("int8")
-    elif mode == "binary":
-        y_train = y_train.map({"inactive": 0, "active": 1}).astype("int8")
-    else:
-        raise ValueError(f"Invalid mode: {mode}")
+    y_train = (
+        pd.read_csv(TRAIN_LABELS_PATH, index_col=0, names=["target"], skiprows=1)[
+            "target"
+        ]
+        .map({"active": 1, "inactive": 0})
+        .astype("int8")
+    )
     return X_train, X_test, y_train

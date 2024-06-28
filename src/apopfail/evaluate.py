@@ -18,11 +18,11 @@ from sklearn.metrics import (
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
 
-def score(model, X, y, pos_label=-1):
+def score(model, X, y, pos_label=1):
     """Score the model on the test set."""
     scoring = _check_scoring(
         {
-            "ROC AUC": "roc_auc",
+            # "ROC AUC": "roc_auc", # does not work
             "Average Precision": make_scorer(
                 average_precision_score, pos_label=pos_label
             ),

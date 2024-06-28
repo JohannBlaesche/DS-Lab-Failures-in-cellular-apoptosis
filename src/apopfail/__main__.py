@@ -2,15 +2,16 @@
 
 import sys
 import time
+import warnings
 from pathlib import Path
 
 import click
 import numpy as np
 import pandas as pd
 from loguru import logger
+from pyod.models.iforest import IForest
 from sklearn import set_config
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import OneClassSVM
 
 from apopfail.evaluate import evaluate
 from apopfail.model import clean, get_pipeline, train
@@ -28,17 +29,11 @@ TARGET = "5408"
 
 @click.command()
 @click.option(
-    "--log-level",
-    default="info",
-    type=click.Choice(
-        ["debug", "info", "success", "warning", "error"], case_sensitive=False
-    ),
-)
-@click.option(
     "--mode",
     "-m",
     type=click.Choice(["occ", "binary"], case_sensitive=False),
     default="occ",
+    help="Choose the mode of the pipeline. 'occ' for one class classification, 'binary' for binary classification.",  # noqa: E501
 )
 @click.option(
     "--subsample",
@@ -47,24 +42,41 @@ TARGET = "5408"
     default=None,
     help="Subsample the data with the given ratio to decrease training time for testing purposes.",  # noqa: E501
 )
-def main(log_level, mode, subsample):
+@click.option(
+    "--refit/--no-refit",
+    default=False,
+    help="Refit the model on the full dataset after training for best "
+    "submission score. Turn it off to decrease pipeline runtime.",
+)
+@click.option(
+    "--log-level",
+    default="info",
+    type=click.Choice(
+        ["debug", "info", "success", "warning", "error"], case_sensitive=False
+    ),
+    help="Set the logging level.",
+)
+def main(log_level, mode, subsample, refit):
     """Run Prediction Pipeline."""
     setup_logger(log_level)
+    warnings.filterwarnings(
+        "ignore", category=UserWarning, message="X has feature names"
+    )
     np.random.seed(0)
     start = time.perf_counter()
     set_config(transform_output="pandas")
     logger.info("Loading the data...")
-    X_train, X_test, y_train = load_data(root=".", mode=mode)
+    X_train, X_test, y_train = load_data(root=".")
 
     X_train, y_train = clean(X_train, y_train, subsample=subsample)
 
     if mode == "occ":
-        model = get_pipeline(clf=OneClassSVM(kernel="linear"))
+        # only use models from pyod! not sklearn outlier detectors
+        model = get_pipeline(clf=IForest(contamination=0.01))
         logger.info("Running the OCC pipeline...")
-        model = occ(model, X_train, y_train)
+
+        model = occ(model, X_train, y_train, refit=refit)
         y_pred = model.predict(X_test)
-        y_pred = pd.Series(y_pred, index=X_test.index)
-        y_pred = y_pred.map({-1: "active", 1: "inactive"})
 
     elif mode == "binary":
         clf = RandomForestClassifier()
@@ -72,13 +84,14 @@ def main(log_level, mode, subsample):
         logger.info("Training the model on full dataset...")
         model = train(model, X_train, y_train)
         y_pred = model.predict(X_test)
-        y_pred = pd.Series(y_pred, index=X_test.index)
-        y_pred = y_pred.map({0: "inactive", 1: "active"})
-
         logger.info("Evaluating the model...")
         _ = evaluate(model, X_train, y_train, n_folds=5)
+
     else:
         raise ValueError("Invalid mode.")
+
+    y_pred = pd.Series(y_pred, index=X_test.index, name=TARGET)
+    y_pred = y_pred.map({0: "inactive", 1: "active"})
 
     Path(OUTPUT_PATH).mkdir(parents=False, exist_ok=True)
     y_pred.to_csv(SUBMISSION_PATH)

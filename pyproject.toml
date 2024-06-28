@@ -22,12 +22,14 @@ dependencies = [
     "pyarrow>=16.1.0",
     "imbalanced-learn>=0.12.3",
     "umap-learn>=0.5.6",
+    "pyod>=2.0.1",
 ]
 
 [tool.setuptools_scm]
 
 [project.scripts]
-apopfail = "apopfail.__main__:main"
+# apoptosis failure prediction (AFP)
+afp = "apopfail.__main__:main"
 
 [project.optional-dependencies]
 dev = ["pytest", "pre-commit", "pdoc", "jupyter", "ruff"]

@@ -8,7 +8,7 @@ venv:
 	test -d venv || python3 -m venv venv
 
 run:
-	. venv/bin/activate && apopfail
+	. venv/bin/activate && afp --refit --mode occ
 
 clean:
 	rm -rf venv

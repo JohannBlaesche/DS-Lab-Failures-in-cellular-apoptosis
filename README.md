@@ -15,7 +15,7 @@ make
 
 which defaults to `make all`.
 
-Alternatively, run the pipeline manually with `apopfail` after having installed the required packages, e.g. with `pip install .`
+Alternatively, run the pipeline manually with `afp` after having installed the required packages, e.g. with `pip install .`
 
 ## Pipeline CLI arguments
 
@@ -24,7 +24,12 @@ To see all available arguments, run:
 apopfail --help
 ```
 
-Currently, only the logging level can be changed.
+When running the pipeline, the following arguments are available:
+- `--mode`: The mode of the pipeline. Either `binary` or `occ`. Default is `occ`.
+- `--refit`: Refit the model on the full training data before predicting the test data. Default is (--no-refit) False to save time.
+  Ignored when `--mode binary` is used. When the pipeline is run through `make run`, it is activated by default.
+- `subsample`: The fraction of the training data to use. Default is None, i.e. use all training data. Useful for testing.
+
 
 ## Development Guide
 

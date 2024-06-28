@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from apopfail.evaluate import score
 
 
-def occ(model, X, y):
+def occ(model, X, y, refit=True):
     """Run the one-class classification pipeline.
 
     Parameters
@@ -20,17 +20,20 @@ def occ(model, X, y):
         The target variable.
     """
     # Split data into normal and abnormal
-    X_normal = X.loc[y == 1]
-    X_abnormal = X.loc[y == -1]
+    X_normal = X.loc[y == 0]
+    X_abnormal = X.loc[y == 1]
 
     # Create train-test split with a specified contamination level
-    train, test, test_labels = split_data(X_normal, X_abnormal, contamination=0.01)
+    train, test, test_labels = split_data(X_normal, X_abnormal, contamination=0.1)
     model.fit(train)
 
     score(model, test, test_labels)
 
     # Fit model on the full normal data
-    return model.fit(X_normal)
+    if refit:
+        return model.fit(X_normal)
+    else:
+        return model
 
 
 def split_data(X_normal, X_abnormal, contamination):
@@ -48,8 +51,8 @@ def split_data(X_normal, X_abnormal, contamination):
     test = pd.concat([X_normal_test, X_abnormal])
     test_labels = np.concatenate(
         [
-            np.ones(len(X_normal_test), dtype="int8"),
-            -1 * np.ones(len(X_abnormal), dtype="int8"),
+            np.zeros(len(X_normal_test), dtype="int8"),
+            np.ones(len(X_abnormal), dtype="int8"),
         ],
     )
 
