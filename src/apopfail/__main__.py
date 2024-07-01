@@ -79,7 +79,7 @@ def main(log_level, mode, subsample, refit):
         model = get_pipeline(clf=clf)
         logger.info("Running the OCC pipeline...")
 
-        model = occ(model, X_train, y_train, refit=refit)
+        model, _ = occ(model, X_train, y_train, refit=refit)
         y_pred = model.predict(X_test)
 
     elif mode == "binary":
