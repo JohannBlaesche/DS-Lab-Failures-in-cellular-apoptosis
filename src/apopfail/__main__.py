@@ -32,7 +32,7 @@ TARGET = "5408"
     "--mode",
     "-m",
     type=click.Choice(["occ", "binary"], case_sensitive=False),
-    default="binary",
+    default="occ",
     help="Choose the mode of the pipeline. 'occ' for one class classification, 'binary' for binary classification.",  # noqa: E501
 )
 @click.option(
@@ -72,7 +72,11 @@ def main(log_level, mode, subsample, refit):
 
     if mode == "occ":
         # only use models from pyod! not sklearn outlier detectors
-        model = get_pipeline(clf=IForest(contamination=0.01))
+        contamination = y_train.mean()
+        clf = IForest(
+            contamination=contamination, n_jobs=-1, random_state=0, behaviour="new"
+        )
+        model = get_pipeline(clf=clf)
         logger.info("Running the OCC pipeline...")
 
         model = occ(model, X_train, y_train, refit=refit)
