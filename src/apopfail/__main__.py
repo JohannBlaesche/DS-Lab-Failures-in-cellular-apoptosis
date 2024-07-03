@@ -8,14 +8,14 @@ from pathlib import Path
 import click
 import numpy as np
 import pandas as pd
-from loguru import logger
-from pyod.models.iforest import IForest
-from sklearn import set_config
-from sklearn.ensemble import RandomForestClassifier
 
+# from torch import float32
+from loguru import logger
+from xgboost import XGBClassifier
+
+from apopfail.compare import compare_occ_models
 from apopfail.evaluate import evaluate
 from apopfail.model import clean, get_pipeline, train
-from apopfail.occ import occ
 from apopfail.utils.loading import load_data
 
 DATA_PATH = "./data"
@@ -32,7 +32,7 @@ TARGET = "5408"
     "--mode",
     "-m",
     type=click.Choice(["occ", "binary"], case_sensitive=False),
-    default="occ",
+    default="binary",
     help="Choose the mode of the pipeline. 'occ' for one class classification, 'binary' for binary classification.",  # noqa: E501
 )
 @click.option(
@@ -64,14 +64,13 @@ def main(log_level, mode, subsample, refit):
     )
     np.random.seed(0)
     start = time.perf_counter()
-    set_config(transform_output="pandas")
     logger.info("Loading the data...")
     X_train, X_test, y_train = load_data(root=".")
 
     X_train, y_train = clean(X_train, y_train, subsample=subsample)
-
     if mode == "occ":
         # only use models from pyod! not sklearn outlier detectors
+        """'
         contamination = y_train.mean()
         clf = IForest(
             contamination=contamination, n_jobs=-1, random_state=0, behaviour="new"
@@ -79,11 +78,21 @@ def main(log_level, mode, subsample, refit):
         model = get_pipeline(clf=clf)
         logger.info("Running the OCC pipeline...")
 
-        model = occ(model, X_train, y_train, refit=refit)
+        model, _ = occ(model, X_train, y_train, refit=refit)
+        """
+        model = compare_occ_models(X_train, y_train, 3)
         y_pred = model.predict(X_test)
 
     elif mode == "binary":
-        clf = RandomForestClassifier()
+        # set dtype of X_train and y_train to float32 for NeuralNetClassifier
+        X_train = X_train.astype(np.float32)
+        y_train = y_train.astype(np.float32)
+
+        clf = XGBClassifier(
+            reg_lambda=30, reg_alpha=20, n_estimators=2000, random_state=0
+        )
+        # sampler = SMOTE(sampling_strategy="minority", random_state=0)
+
         model = get_pipeline(clf=clf)
         logger.info("Training the model on full dataset...")
         model = train(model, X_train, y_train)

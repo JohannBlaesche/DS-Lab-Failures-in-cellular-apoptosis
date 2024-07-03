@@ -5,6 +5,9 @@ from loguru import logger
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import RobustScaler
+from skorch import NeuralNetBinaryClassifier
+from torch import nn
+from torch.optim import Adam
 
 
 def train(model, X, y=None):
@@ -48,10 +51,19 @@ def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeli
     pipeline : imblearn.pipeline.Pipeline
         Pipeline to use in the prediction step.
     """
+    clf = NeuralNetBinaryClassifier(
+        ApopfailNeuralNet,
+        max_epochs=15,
+        lr=0.001,
+        optimizer=Adam,
+        criterion=nn.BCEWithLogitsLoss,
+        device="cuda",
+        optimizer__weight_decay=0.001,
+    )
     steps = [
         ("imputer", SimpleImputer(strategy="mean")),
         ("scaler", scaler or RobustScaler()),
-        ("reducer", reducer or PCA(n_components=0.99)),
+        ("reducer", reducer or PCA(n_components=900)),
     ]
     if sampler is not None:
         steps.append(("sampler", sampler))
@@ -60,3 +72,26 @@ def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeli
         steps.append(("clf", clf))
 
     return Pipeline(steps=steps)
+
+
+class ApopfailNeuralNet(nn.Module):
+    """Simple Neural Network for binary classification."""
+
+    def __init__(self, nonlin=nn.ReLU()):
+        super().__init__()
+
+        self.dense0 = nn.Linear(900, 256)
+        self.nonlin = nonlin
+        self.dropout = nn.Dropout(0.3)
+        self.dense1 = nn.Linear(256, 128)
+        self.output = nn.Linear(128, 1)
+
+    def forward(self, X, **kwargs):
+        """Forward pass of the neural network."""
+        X = self.nonlin(self.dense0(X))
+        X = self.dropout(X)
+        X = self.nonlin(self.dense1(X))
+        X = self.dropout(X)
+        X = self.output(X)
+        X = nn.Flatten(start_dim=0)(X)
+        return X
