@@ -9,13 +9,12 @@ import click
 import numpy as np
 import pandas as pd
 from loguru import logger
-from pyod.models.iforest import IForest
 from sklearn import set_config
 from sklearn.ensemble import RandomForestClassifier
 
+from apopfail.compare import compare_occ_models
 from apopfail.evaluate import evaluate
 from apopfail.model import clean, get_pipeline, train
-from apopfail.occ import occ
 from apopfail.utils.loading import load_data
 
 DATA_PATH = "./data"
@@ -72,6 +71,7 @@ def main(log_level, mode, subsample, refit):
 
     if mode == "occ":
         # only use models from pyod! not sklearn outlier detectors
+        """'
         contamination = y_train.mean()
         clf = IForest(
             contamination=contamination, n_jobs=-1, random_state=0, behaviour="new"
@@ -79,7 +79,9 @@ def main(log_level, mode, subsample, refit):
         model = get_pipeline(clf=clf)
         logger.info("Running the OCC pipeline...")
 
-        model = occ(model, X_train, y_train, refit=refit)
+        model, _ = occ(model, X_train, y_train, refit=refit)
+        """
+        model = compare_occ_models(X_train, y_train, 3)
         y_pred = model.predict(X_test)
 
     elif mode == "binary":

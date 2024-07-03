@@ -35,7 +35,7 @@ def score(model, X, y, pos_label=1):
     for key, scorer in scoring.items():
         score = scorer(model, X, y)
         scores[key] = score
-        logger.info(f"{key}: {score:.4f}")
+        logger.debug(f"{key}: {score:.4f}")
     return scores
 
 
