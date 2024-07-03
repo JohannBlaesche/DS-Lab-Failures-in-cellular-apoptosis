@@ -35,20 +35,22 @@ def compare_occ_models(X, y, n_repeats):
 
         result_dict[model_key] = metrics
 
-    # create a dict with just one target metric that could be used for ranking
     target_metric = "Average Precision"
-    target_metric_dict = {
-        model_key: metrics[target_metric] for model_key, metrics in result_dict.items()
-    }
+    best_model_key = None
+    best_model_score = 0
 
-    best_model_key, best_score = max(
-        (
-            (model_key, np.mean(metrics))
-            for model_key, metrics in target_metric_dict.items()
-        ),
-        key=lambda item: item[1],
+    for model_key, metrics in result_dict.items():
+        model_results = metrics[target_metric]
+        result_mean = np.mean(model_results)
+        result_std = np.std(model_results)
+        logger.info(f"{model_key}: {result_mean: .4f}(±{result_std: .4f})")
+        if result_mean > best_model_score:
+            best_model_score = result_mean
+            best_model_key = model_key
+
+    logger.info(
+        f"Chose the model {best_model_key} with average score of {best_model_score}"
     )
-    logger.info(f"Chose the model {best_model_key} with average score of {best_score}")
 
     best_model = models[best_model_key]
     return best_model
