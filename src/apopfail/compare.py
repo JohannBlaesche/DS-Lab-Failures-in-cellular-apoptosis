@@ -24,14 +24,14 @@ def compare_occ_models(X, y, n_repeats):
         }
 
         for i in range(n_repeats):
-            model, scores = occ(model, X, y, random_state=i)
+            model, scores = occ(model, X, y, random_state=i, refit=False)
             for metric, value in scores.items():
                 if metric in metrics:
                     metrics[metric].append(value)
 
         # Save intermediate results for each model as JSON
         with open(f"output/{model_key}_scores.json", "w") as outfile:
-            json.dump(metrics, outfile)
+            json.dump(metrics, outfile, indent=4)
 
         result_dict[model_key] = metrics
 
