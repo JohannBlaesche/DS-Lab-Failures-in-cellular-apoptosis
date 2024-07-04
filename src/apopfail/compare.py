@@ -1,27 +1,34 @@
 """Model comparison."""
 
 import json
+import os
 
 import numpy as np
 from loguru import logger
+from pyod.models.abod import ABOD
+from pyod.models.auto_encoder import AutoEncoder
 from pyod.models.iforest import IForest
+from tqdm import tqdm
 
 from apopfail.model import get_pipeline
 from apopfail.occ import occ
 
 
-def compare_occ_models(X, y, n_repeats):
+def compare_occ_models(X, y, n_repeats, skip_existing=True):
     """Compare One-Class Classification models."""
     models = build_model_dict()
     result_dict = {}
 
-    for model_key, model in models.items():
+    for model_key, model in tqdm(models.items()):
         metrics = {
             "ROC AUC": [],
             "Average Precision": [],
             "Recall (Sensitivity)": [],
             "F2 Score": [],
         }
+
+        if skip_existing and os.path.exists(f"output/{model_key}_scores.json"):
+            continue
 
         for i in range(n_repeats):
             model, scores = occ(model, X, y, random_state=i, refit=False)
@@ -58,7 +65,16 @@ def compare_occ_models(X, y, n_repeats):
 
 def build_model_dict():
     """Build a list of models."""
-    clf = IForest()
-    model = get_pipeline(clf=clf)
-    model_dict = {"isolation_forest": model}
+    iforest = IForest(random_state=0)
+    abod = ABOD()
+    autoencoder = AutoEncoder(random_state=0, preprocessing=False)
+
+    model_dict = {
+        "isolation_forest": iforest,
+        "abod": abod,
+        "autoencoder": autoencoder,
+    }
+    for model_key, model in model_dict.items():
+        model.set_params(contamination=0.01)
+        model_dict[model_key] = get_pipeline(clf=model)
     return model_dict

@@ -81,7 +81,7 @@ def main(log_level, mode, subsample, refit):
 
         model, _ = occ(model, X_train, y_train, refit=refit)
         """
-        model = compare_occ_models(X_train, y_train, 3)
+        model = compare_occ_models(X_train, y_train, n_repeats=3, skip_existing=True)
         y_pred = model.predict(X_test)
 
     elif mode == "binary":
