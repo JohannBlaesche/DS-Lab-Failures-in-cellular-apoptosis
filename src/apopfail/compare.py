@@ -28,9 +28,12 @@ def compare_occ_models(X, y, n_repeats, skip_existing=True):
         }
 
         if skip_existing and os.path.exists(f"output/{model_key}_scores.json"):
+            logger.info("Skipping existing model...")
             continue
 
-        for i in range(n_repeats):
+        logger.info("Running model: " + model_key)
+
+        for i in tqdm(range(n_repeats), leave=False):
             model, scores = occ(model, X, y, random_state=i, refit=False)
             for metric, value in scores.items():
                 if metric in metrics:
@@ -67,7 +70,14 @@ def build_model_dict():
     """Build a list of models."""
     iforest = IForest(random_state=0)
     abod = ABOD()
-    autoencoder = AutoEncoder(random_state=0, preprocessing=False)
+    autoencoder = AutoEncoder(
+        random_state=0,
+        preprocessing=False,
+        epoch_num=25,
+        verbose=0,
+        hidden_neuron_list=[256, 128, 64],
+        dropout_rate=0.1,
+    )
 
     model_dict = {
         "isolation_forest": iforest,
