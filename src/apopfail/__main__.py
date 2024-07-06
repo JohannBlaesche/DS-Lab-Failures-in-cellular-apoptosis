@@ -115,7 +115,7 @@ def setup_logger(level: str):
                 "format": "{time:DD-MMM-YYYY HH:mm:ss} | {level: <8} | {message}",
                 "level": level.upper(),
             },
-            {"sink": f"{OUTPUT_PATH}/apopfail.log", "rotation": "1 day"},
+            {"sink": f"{OUTPUT_PATH}/logs/apopfail.log", "rotation": "1 day"},
         ],
     }
     logger.enable("apopfail")
