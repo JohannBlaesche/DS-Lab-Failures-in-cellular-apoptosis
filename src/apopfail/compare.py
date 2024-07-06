@@ -2,12 +2,15 @@
 
 import json
 import os
+from pathlib import Path
 
 import numpy as np
+import umap
 from loguru import logger
 from pyod.models.abod import ABOD
 from pyod.models.auto_encoder import AutoEncoder
 from pyod.models.iforest import IForest
+from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
 from apopfail.model import get_pipeline
@@ -19,28 +22,28 @@ def compare_occ_models(X, y, n_repeats, skip_existing=True):
     models = build_model_dict()
     result_dict = {}
 
-    for model_key, model in tqdm(models.items()):
-        metrics = {
-            "ROC AUC": [],
-            "Average Precision": [],
-            "Recall (Sensitivity)": [],
-            "F2 Score": [],
-        }
+    for model_key, model in tqdm(models.items(), desc="Iterating Models"):
+        metrics = {}
 
         if skip_existing and os.path.exists(f"output/{model_key}_scores.json"):
-            logger.info("Skipping existing model...")
             continue
 
-        logger.info("Running model: " + model_key)
+        random_states = np.random.randint(low=0, high=1000, size=n_repeats)
 
-        for i in tqdm(range(n_repeats), leave=False):
-            model, scores = occ(model, X, y, random_state=i, refit=False)
+        for i in tqdm(random_states, leave=False, desc="Computing Metrics"):
+            model, scores = occ(
+                model, X, y, random_state=i, refit=False, model_name=model_key
+            )
             for metric, value in scores.items():
-                if metric in metrics:
-                    metrics[metric].append(value)
+                vals = metrics.get(metric, [])
+                vals.append(value)
+                metrics[metric] = vals
 
         # Save intermediate results for each model as JSON
-        with open(f"output/{model_key}_scores.json", "w") as outfile:
+        path = Path("output", "scores")
+        path.mkdir(parents=True, exist_ok=True)
+
+        with open(path.with_name(f"{model_key}_scores.json"), "w") as outfile:
             json.dump(metrics, outfile, indent=4)
 
         result_dict[model_key] = metrics
@@ -68,23 +71,31 @@ def compare_occ_models(X, y, n_repeats, skip_existing=True):
 
 def build_model_dict():
     """Build a list of models."""
-    iforest = IForest(random_state=0)
-    abod = ABOD()
+    iforest = get_pipeline(clf=IForest(random_state=0))
+    abod = get_pipeline(clf=ABOD())
     autoencoder = AutoEncoder(
         random_state=0,
         preprocessing=False,
-        epoch_num=25,
+        batch_size=64,
+        epoch_num=50,
         verbose=0,
-        hidden_neuron_list=[256, 128, 64],
+        hidden_neuron_list=[256, 64],
         dropout_rate=0.1,
     )
 
     model_dict = {
         "isolation_forest": iforest,
         "abod": abod,
-        "autoencoder": autoencoder,
+        "autoencoder standard scaling": get_pipeline(
+            clf=autoencoder, scaler=StandardScaler()
+        ),
+        "autoencoder no dimension reduction": get_pipeline(
+            clf=autoencoder, reducer="passthrough"
+        ),
+        "autoencoder umap": get_pipeline(
+            clf=autoencoder, reducer=umap.UMAP(set_op_mix_ratio=0.25, n_components=128)
+        ),
     }
-    for model_key, model in model_dict.items():
-        model.set_params(contamination=0.01)
-        model_dict[model_key] = get_pipeline(clf=model)
+    for model in model_dict.values():
+        model.set_params(clf__contamination=0.01)
     return model_dict
