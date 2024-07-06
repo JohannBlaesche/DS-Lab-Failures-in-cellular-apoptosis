@@ -1,6 +1,7 @@
 """Evaluation step in the pipeline."""
 
 import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -56,13 +57,15 @@ def plot_diagnostics(model, X, y, pos_label=1, model_name=None):
     if model_name is None:
         model_name = f"{model.named_steps['clf'].__class__.__name__}"
 
-    pr_curve_display.figure_.savefig(f"output/pr_curve_{model_name}.png")
+    save_dir = Path("output", "plots")
+    save_dir.mkdir(parents=True, exist_ok=True)
+    pr_curve_display.figure_.savefig(save_dir / f"pr_curve_{model_name}.png")
 
     confusion_matrix_display = ConfusionMatrixDisplay.from_predictions(
         y, y_pred, display_labels=["inactive", "active"]
     )
     confusion_matrix_display.figure_.savefig(
-        f"output/confusion_matrix_{model_name}.png"
+        save_dir / f"confusion_matrix_{model_name}.png"
     )
     return pr_curve_display, confusion_matrix_display
 

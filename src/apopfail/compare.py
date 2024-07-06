@@ -5,7 +5,6 @@ import os
 from pathlib import Path
 
 import numpy as np
-import umap
 from loguru import logger
 from pyod.models.abod import ABOD
 from pyod.models.auto_encoder import AutoEncoder
@@ -25,7 +24,10 @@ def compare_occ_models(X, y, n_repeats, skip_existing=True):
     for model_key, model in tqdm(models.items(), desc="Iterating Models"):
         metrics = {}
 
-        if skip_existing and os.path.exists(f"output/{model_key}_scores.json"):
+        path = Path("output", "scores")
+        path.mkdir(parents=True, exist_ok=True)
+        model_scores_path = path / f"{model_key}_scores.json"
+        if skip_existing and os.path.exists(model_scores_path):
             continue
 
         random_states = np.random.randint(low=0, high=1000, size=n_repeats)
@@ -40,10 +42,7 @@ def compare_occ_models(X, y, n_repeats, skip_existing=True):
                 metrics[metric] = vals
 
         # Save intermediate results for each model as JSON
-        path = Path("output", "scores")
-        path.mkdir(parents=True, exist_ok=True)
-
-        with open(path.with_name(f"{model_key}_scores.json"), "w") as outfile:
+        with open(model_scores_path, "w") as outfile:
             json.dump(metrics, outfile, indent=4)
 
         result_dict[model_key] = metrics
@@ -77,9 +76,9 @@ def build_model_dict():
         random_state=0,
         preprocessing=False,
         batch_size=64,
-        epoch_num=50,
+        epoch_num=25,
         verbose=0,
-        hidden_neuron_list=[256, 64],
+        hidden_neuron_list=[128, 64],
         dropout_rate=0.1,
     )
 
@@ -91,9 +90,6 @@ def build_model_dict():
         ),
         "autoencoder no dimension reduction": get_pipeline(
             clf=autoencoder, reducer="passthrough"
-        ),
-        "autoencoder umap": get_pipeline(
-            clf=autoencoder, reducer=umap.UMAP(set_op_mix_ratio=0.25, n_components=128)
         ),
     }
     for model in model_dict.values():
