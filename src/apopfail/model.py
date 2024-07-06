@@ -4,7 +4,7 @@ from imblearn.pipeline import Pipeline
 from loguru import logger
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import StandardScaler
 
 
 def train(model, X, y=None):
@@ -50,7 +50,7 @@ def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeli
     """
     steps = [
         ("imputer", SimpleImputer(strategy="mean")),
-        ("scaler", scaler or RobustScaler()),
+        ("scaler", scaler or StandardScaler()),
         ("reducer", reducer or PCA(n_components=0.99)),
     ]
     if sampler is not None:
