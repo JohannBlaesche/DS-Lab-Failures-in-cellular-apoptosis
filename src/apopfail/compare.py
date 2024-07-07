@@ -8,7 +8,10 @@ import numpy as np
 from loguru import logger
 from pyod.models.abod import ABOD
 from pyod.models.auto_encoder import AutoEncoder
+from pyod.models.cof import COF
 from pyod.models.iforest import IForest
+from pyod.models.lof import LOF
+from pyod.models.ocsvm import OCSVM
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
@@ -61,7 +64,7 @@ def compare_occ_models(X, y, n_repeats, skip_existing=True):
             best_model_key = model_key
 
     logger.info(
-        f"Chose the model {best_model_key} with average score of {best_model_score}"
+        f"Chose the model {best_model_key} with average score {best_model_score: .4f}"
     )
 
     best_model = models[best_model_key]
@@ -81,6 +84,13 @@ def build_model_dict():
         hidden_neuron_list=[128, 64],
         dropout_rate=0.1,
     )
+    lof = LOF()
+    cof = COF()
+    ocsvm = OCSVM()
+
+    lof_model = get_pipeline(clf=lof)
+    cof_model = get_pipeline(clf=cof)
+    ocsvm_model = get_pipeline(clf=ocsvm)
 
     model_dict = {
         "isolation_forest": iforest,
@@ -91,6 +101,9 @@ def build_model_dict():
         "autoencoder no dimension reduction": get_pipeline(
             clf=autoencoder, reducer="passthrough"
         ),
+        "lof": lof_model,
+        "cof": cof_model,
+        "ocsvm": ocsvm_model,
     }
     for model in model_dict.values():
         model.set_params(clf__contamination=0.01)

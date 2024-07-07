@@ -130,7 +130,7 @@ def custom_train_test_split(model, X, y, scoring, train_size=0.8):
     scores = dict()
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, train_size=0.8, stratify=y
+        X, y, train_size=train_size, stratify=y
     )
 
     for key, scorer in scoring.items():
