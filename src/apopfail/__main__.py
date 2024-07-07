@@ -8,10 +8,11 @@ from pathlib import Path
 import click
 import numpy as np
 import pandas as pd
+from imblearn.over_sampling import SMOTE
 
 # from torch import float32
 from loguru import logger
-from xgboost import XGBClassifier
+from sklearn.svm import SVC
 
 from apopfail.compare import compare_occ_models
 from apopfail.evaluate import evaluate
@@ -88,12 +89,15 @@ def main(log_level, mode, subsample, refit):
         X_train = X_train.astype(np.float32)
         y_train = y_train.astype(np.float32)
 
-        clf = XGBClassifier(
-            reg_lambda=30, reg_alpha=20, n_estimators=2000, random_state=0
+        clf = SVC(
+            # reg_lambda=30, reg_alpha=20, n_estimators=2000, random_state=0
+            C=0.5,
+            class_weight="balanced",
+            random_state=0,
         )
-        # sampler = SMOTE(sampling_strategy="minority", random_state=0)
+        sampler = SMOTE(sampling_strategy="minority", random_state=0)
 
-        model = get_pipeline(clf=clf)
+        model = get_pipeline(clf=clf, sampler=sampler)
         logger.info("Training the model on full dataset...")
         model = train(model, X_train, y_train)
         y_pred = model.predict(X_test)

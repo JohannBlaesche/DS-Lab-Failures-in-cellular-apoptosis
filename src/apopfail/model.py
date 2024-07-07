@@ -5,9 +5,7 @@ from loguru import logger
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import RobustScaler
-from skorch import NeuralNetBinaryClassifier
 from torch import nn
-from torch.optim import Adam
 
 
 def train(model, X, y=None):
@@ -51,19 +49,19 @@ def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeli
     pipeline : imblearn.pipeline.Pipeline
         Pipeline to use in the prediction step.
     """
-    clf = NeuralNetBinaryClassifier(
-        ApopfailNeuralNet,
-        max_epochs=15,
-        lr=0.001,
-        optimizer=Adam,
-        criterion=nn.BCEWithLogitsLoss,
-        device="cuda",
-        optimizer__weight_decay=0.001,
-    )
+    # clf = NeuralNetBinaryClassifier(
+    #     ApopfailNeuralNet,
+    #     max_epochs=15,
+    #     lr=0.001,
+    #     optimizer=Adam,
+    #     criterion=nn.BCEWithLogitsLoss,
+    #     device="cuda",
+    #     optimizer__weight_decay=0.001,
+    # )
     steps = [
         ("imputer", SimpleImputer(strategy="mean")),
         ("scaler", scaler or RobustScaler()),
-        ("reducer", reducer or PCA(n_components=900)),
+        ("reducer", reducer or PCA(n_components=0.99)),
     ]
     if sampler is not None:
         steps.append(("sampler", sampler))
