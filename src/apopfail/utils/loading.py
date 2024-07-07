@@ -1,5 +1,7 @@
 """Data loading utilities."""
 
+from pathlib import Path
+
 import pandas as pd
 
 
@@ -12,9 +14,10 @@ def load_data(root="."):
         The root directory, by default "."
 
     """
-    TEST_VALUES_PATH = f"{root}/data/test_data_p53_mutant.parquet"
-    TRAIN_VALUES_PATH = f"{root}/data/train_set_p53mutant.parquet"
-    TRAIN_LABELS_PATH = f"{root}/data/train_labels_p53mutant.csv"
+    data_dir = Path(root) / "data"
+    TEST_VALUES_PATH = data_dir / "test_data_p53_mutant.parquet"
+    TRAIN_VALUES_PATH = data_dir / "train_set_p53mutant.parquet"
+    TRAIN_LABELS_PATH = data_dir / "train_labels_p53mutant.csv"
 
     X_test = pd.read_parquet(TEST_VALUES_PATH)
     X_train = pd.read_parquet(TRAIN_VALUES_PATH)

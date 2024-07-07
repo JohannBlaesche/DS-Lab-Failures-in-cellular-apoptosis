@@ -1,39 +1,51 @@
 """Model comparison."""
 
 import json
+import os
+from pathlib import Path
 
 import numpy as np
 from loguru import logger
+from pyod.models.abod import ABOD
+from pyod.models.auto_encoder import AutoEncoder
 from pyod.models.cof import COF
+from pyod.models.iforest import IForest
 from pyod.models.lof import LOF
 from pyod.models.ocsvm import OCSVM
+from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
 
 from apopfail.model import get_pipeline
 from apopfail.occ import occ
 
 
-def compare_occ_models(X, y, n_repeats):
+def compare_occ_models(X, y, n_repeats, skip_existing=True):
     """Compare One-Class Classification models."""
     models = build_model_dict()
     result_dict = {}
 
-    for model_key, model in models.items():
-        metrics = {
-            "ROC AUC": [],
-            "Average Precision": [],
-            "Recall (Sensitivity)": [],
-            "F2 Score": [],
-        }
+    for model_key, model in tqdm(models.items(), desc="Iterating Models"):
+        metrics = {}
 
-        for i in range(n_repeats):
-            logger.info(f"Round {i} of OCC with model {model_key}.")
-            model, scores = occ(model, X, y, random_state=i, refit=False)
+        path = Path("output", "scores")
+        path.mkdir(parents=True, exist_ok=True)
+        model_scores_path = path / f"{model_key}_scores.json"
+        if skip_existing and os.path.exists(model_scores_path):
+            continue
+
+        random_states = np.random.randint(low=0, high=1000, size=n_repeats)
+
+        for i in tqdm(random_states, leave=False, desc="Computing Metrics"):
+            model, scores = occ(
+                model, X, y, random_state=i, refit=False, model_name=model_key
+            )
             for metric, value in scores.items():
-                if metric in metrics:
-                    metrics[metric].append(value)
+                vals = metrics.get(metric, [])
+                vals.append(value)
+                metrics[metric] = vals
 
         # Save intermediate results for each model as JSON
-        with open(f"output/{model_key}_scores_0.1.json", "w") as outfile:
+        with open(model_scores_path, "w") as outfile:
             json.dump(metrics, outfile, indent=4)
 
         result_dict[model_key] = metrics
@@ -60,18 +72,39 @@ def compare_occ_models(X, y, n_repeats):
 
 
 def build_model_dict():
-    """Build a dict of models."""
-    cont = 0.1
-    lof = LOF(contamination=cont)
-    cof = COF(contamination=cont)
-    ocsvm = OCSVM(contamination=cont)
+    """Build a list of models."""
+    iforest = get_pipeline(clf=IForest(random_state=0))
+    abod = get_pipeline(clf=ABOD())
+    autoencoder = AutoEncoder(
+        random_state=0,
+        preprocessing=False,
+        batch_size=64,
+        epoch_num=25,
+        verbose=0,
+        hidden_neuron_list=[128, 64],
+        dropout_rate=0.1,
+    )
+    lof = LOF()
+    cof = COF()
+    ocsvm = OCSVM()
 
     lof_model = get_pipeline(clf=lof)
     cof_model = get_pipeline(clf=cof)
     ocsvm_model = get_pipeline(clf=ocsvm)
+
     model_dict = {
+        "isolation_forest": iforest,
+        "abod": abod,
+        "autoencoder standard scaling": get_pipeline(
+            clf=autoencoder, scaler=StandardScaler()
+        ),
+        "autoencoder no dimension reduction": get_pipeline(
+            clf=autoencoder, reducer="passthrough"
+        ),
         "lof": lof_model,
         "cof": cof_model,
         "ocsvm": ocsvm_model,
     }
+    for model in model_dict.values():
+        model.set_params(clf__contamination=0.01)
     return model_dict

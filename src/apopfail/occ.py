@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from apopfail.evaluate import score
 
 
-def occ(model, X, y, refit=True, random_state=0):
+def occ(model, X, y, refit=True, random_state=0, model_name=None):
     """Run the one-class classification pipeline.
 
     Parameters
@@ -28,7 +28,7 @@ def occ(model, X, y, refit=True, random_state=0):
     )
     model.fit(train)
 
-    scores = score(model, test, test_labels)
+    scores = score(model, test, test_labels, model_name=model_name)
 
     if refit:
         model.fit(X_normal)

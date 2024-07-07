@@ -1,12 +1,15 @@
 """Evaluation step in the pipeline."""
 
 import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from loguru import logger
 from sklearn.base import BaseEstimator
 from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    PrecisionRecallDisplay,
     average_precision_score,
     fbeta_score,
     get_scorer,
@@ -18,11 +21,11 @@ from sklearn.metrics import (
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
 
-def score(model, X, y, pos_label=1):
+def score(model, X, y, pos_label=1, model_name=None):
     """Score the model on the test set."""
     scoring = _check_scoring(
         {
-            # "ROC AUC": "roc_auc", # does not work
+            # "ROC AUC": "roc_auc",  # does not work
             "Average Precision": make_scorer(
                 average_precision_score, pos_label=pos_label
             ),
@@ -36,7 +39,35 @@ def score(model, X, y, pos_label=1):
         score = scorer(model, X, y)
         scores[key] = score
         logger.debug(f"{key}: {score:.4f}")
+
+    plot_diagnostics(model, X, y, pos_label=pos_label, model_name=model_name)
+
     return scores
+
+
+def plot_diagnostics(model, X, y, pos_label=1, model_name=None):
+    """Plot the PR curve and confusion matrix for the model."""
+    y_pred = model.predict(X)
+    pr_curve_display = PrecisionRecallDisplay.from_predictions(
+        y,
+        y_pred,
+        pos_label=pos_label,
+        plot_chance_level=True,
+    )
+    if model_name is None:
+        model_name = f"{model.named_steps['clf'].__class__.__name__}"
+
+    save_dir = Path("output", "plots")
+    save_dir.mkdir(parents=True, exist_ok=True)
+    pr_curve_display.figure_.savefig(save_dir / f"pr_curve_{model_name}.png")
+
+    confusion_matrix_display = ConfusionMatrixDisplay.from_predictions(
+        y, y_pred, display_labels=["inactive", "active"]
+    )
+    confusion_matrix_display.figure_.savefig(
+        save_dir / f"confusion_matrix_{model_name}.png"
+    )
+    return pr_curve_display, confusion_matrix_display
 
 
 def evaluate(
@@ -156,6 +187,8 @@ def cross_validate_custom(model, X, y, cv, scoring):
             scores[f"test_{key}"][i] = score
             score_train = scorer(model, X_train, y_train)
             scores[f"train_{key}"][i] = score_train
+
+        plot_diagnostics(model, X_test, y_test)
 
         end = time.perf_counter()
         logger.info(

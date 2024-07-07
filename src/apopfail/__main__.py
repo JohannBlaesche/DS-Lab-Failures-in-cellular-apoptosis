@@ -81,7 +81,7 @@ def main(log_level, mode, subsample, refit):
 
         model, _ = occ(model, X_train, y_train, refit=refit)
         """
-        model = compare_occ_models(X_train, y_train, 3)
+        model = compare_occ_models(X_train, y_train, n_repeats=3, skip_existing=True)
         y_pred = model.predict(X_test)
 
     elif mode == "binary":
@@ -126,7 +126,7 @@ def setup_logger(level: str):
                 "format": "{time:DD-MMM-YYYY HH:mm:ss} | {level: <8} | {message}",
                 "level": level.upper(),
             },
-            {"sink": f"{OUTPUT_PATH}/apopfail.log", "rotation": "1 day"},
+            {"sink": f"{OUTPUT_PATH}/logs/apopfail.log", "rotation": "1 day"},
         ],
     }
     logger.enable("apopfail")
