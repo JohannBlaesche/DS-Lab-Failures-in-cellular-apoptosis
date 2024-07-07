@@ -4,7 +4,9 @@ import json
 
 import numpy as np
 from loguru import logger
-from pyod.models.iforest import IForest
+from pyod.models.cof import COF
+from pyod.models.lof import LOF
+from pyod.models.ocsvm import OCSVM
 
 from apopfail.model import get_pipeline
 from apopfail.occ import occ
@@ -24,13 +26,14 @@ def compare_occ_models(X, y, n_repeats):
         }
 
         for i in range(n_repeats):
+            logger.info(f"Round {i} of OCC with model {model_key}.")
             model, scores = occ(model, X, y, random_state=i, refit=False)
             for metric, value in scores.items():
                 if metric in metrics:
                     metrics[metric].append(value)
 
         # Save intermediate results for each model as JSON
-        with open(f"output/{model_key}_scores.json", "w") as outfile:
+        with open(f"output/{model_key}_scores_0.1.json", "w") as outfile:
             json.dump(metrics, outfile, indent=4)
 
         result_dict[model_key] = metrics
@@ -49,7 +52,7 @@ def compare_occ_models(X, y, n_repeats):
             best_model_key = model_key
 
     logger.info(
-        f"Chose the model {best_model_key} with average score of {best_model_score}"
+        f"Chose the model {best_model_key} with average score {best_model_score: .4f}"
     )
 
     best_model = models[best_model_key]
@@ -57,8 +60,18 @@ def compare_occ_models(X, y, n_repeats):
 
 
 def build_model_dict():
-    """Build a list of models."""
-    clf = IForest()
-    model = get_pipeline(clf=clf)
-    model_dict = {"isolation_forest": model}
+    """Build a dict of models."""
+    cont = 0.1
+    lof = LOF(contamination=cont)
+    cof = COF(contamination=cont)
+    ocsvm = OCSVM(contamination=cont)
+
+    lof_model = get_pipeline(clf=lof)
+    cof_model = get_pipeline(clf=cof)
+    ocsvm_model = get_pipeline(clf=ocsvm)
+    model_dict = {
+        "lof": lof_model,
+        "cof": cof_model,
+        "ocsvm": ocsvm_model,
+    }
     return model_dict
