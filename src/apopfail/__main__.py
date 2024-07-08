@@ -12,11 +12,13 @@ from imblearn.over_sampling import SMOTE
 
 # from torch import float32
 from loguru import logger
-from sklearn.svm import SVC
+from sklearn import set_config
+from skorch import NeuralNetBinaryClassifier
+from skorch.callbacks import EarlyStopping, EpochScoring
 
 from apopfail.compare import compare_occ_models
 from apopfail.evaluate import evaluate
-from apopfail.model import clean, get_pipeline, train
+from apopfail.model import ApopfailNeuralNet, clean, get_pipeline, train
 from apopfail.utils.loading import load_data
 
 DATA_PATH = "./data"
@@ -64,6 +66,7 @@ def main(log_level, mode, subsample, refit):
         "ignore", category=UserWarning, message="X has feature names"
     )
     np.random.seed(0)
+    set_config(transform_output="pandas")
     start = time.perf_counter()
     logger.info("Loading the data...")
     X_train, X_test, y_train = load_data(root=".")
@@ -85,19 +88,29 @@ def main(log_level, mode, subsample, refit):
         y_pred = model.predict(X_test)
 
     elif mode == "binary":
-        # set dtype of X_train and y_train to float32 for NeuralNetClassifier
-        X_train = X_train.astype(np.float32)
-        y_train = y_train.astype(np.float32)
-
-        clf = SVC(
-            # reg_lambda=30, reg_alpha=20, n_estimators=2000, random_state=0
-            C=0.5,
-            class_weight="balanced",
-            random_state=0,
+        X_train = X_train.astype("float32")
+        y_train = y_train.astype("float32")
+        early_stopping = EarlyStopping(
+            patience=20, monitor="train_loss", load_best=True
         )
-        sampler = SMOTE(sampling_strategy="minority", random_state=0)
+        scoring = EpochScoring(
+            scoring="average_precision",
+            lower_is_better=False,
+            name="ap",
+            on_train=False,
+        )
+        clf = NeuralNetBinaryClassifier(
+            ApopfailNeuralNet,
+            max_epochs=500,
+            lr=0.001,
+            device="cuda",
+            optimizer__weight_decay=1e-2,
+            iterator_train__shuffle=True,
+            callbacks=[early_stopping, scoring],
+        )
+        sampler = SMOTE(sampling_strategy=0.1, random_state=0)
 
-        model = get_pipeline(clf=clf, sampler=sampler)
+        model = get_pipeline(clf=clf, sampler=sampler, reducer="passthrough")
         logger.info("Training the model on full dataset...")
         model = train(model, X_train, y_train)
         y_pred = model.predict(X_test)

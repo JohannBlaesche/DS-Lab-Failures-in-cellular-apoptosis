@@ -4,7 +4,8 @@ from imblearn.pipeline import Pipeline
 from loguru import logger
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import StandardScaler
+from skorch.helper import DataFrameTransformer
 from torch import nn
 
 
@@ -49,24 +50,17 @@ def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeli
     pipeline : imblearn.pipeline.Pipeline
         Pipeline to use in the prediction step.
     """
-    # clf = NeuralNetBinaryClassifier(
-    #     ApopfailNeuralNet,
-    #     max_epochs=15,
-    #     lr=0.001,
-    #     optimizer=Adam,
-    #     criterion=nn.BCEWithLogitsLoss,
-    #     device="cuda",
-    #     optimizer__weight_decay=0.001,
-    # )
     steps = [
         ("imputer", SimpleImputer(strategy="mean")),
-        ("scaler", scaler or RobustScaler()),
+        ("scaler", scaler or StandardScaler()),
         ("reducer", reducer or PCA(n_components=0.99)),
     ]
     if sampler is not None:
         steps.append(("sampler", sampler))
 
     if clf is not None:
+        if clf.__class__.__name__ == "NeuralNetBinaryClassifier":
+            steps.append(("flatten", DataFrameTransformer()))
         steps.append(("clf", clf))
 
     return Pipeline(steps=steps)
@@ -75,21 +69,25 @@ def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeli
 class ApopfailNeuralNet(nn.Module):
     """Simple Neural Network for binary classification."""
 
-    def __init__(self, nonlin=nn.ReLU()):
+    def __init__(self, input_size=5408, p=0.2):
         super().__init__()
 
-        self.dense0 = nn.Linear(900, 256)
-        self.nonlin = nonlin
-        self.dropout = nn.Dropout(0.3)
-        self.dense1 = nn.Linear(256, 128)
-        self.output = nn.Linear(128, 1)
+        self.seq = nn.Sequential(
+            nn.Linear(input_size, 128),
+            nn.BatchNorm1d(128),
+            nn.GELU(),
+            nn.Dropout(p),
+            nn.Linear(128, 128),
+            nn.BatchNorm1d(128),
+            nn.Dropout(p),
+            nn.GELU(),
+            nn.Linear(128, 64),
+            nn.BatchNorm1d(64),
+            nn.Dropout(p),
+            nn.GELU(),
+            nn.Linear(64, 1),
+        )
 
     def forward(self, X, **kwargs):
         """Forward pass of the neural network."""
-        X = self.nonlin(self.dense0(X))
-        X = self.dropout(X)
-        X = self.nonlin(self.dense1(X))
-        X = self.dropout(X)
-        X = self.output(X)
-        X = nn.Flatten(start_dim=0)(X)
-        return X
+        return self.seq(X)
