@@ -54,7 +54,13 @@ class MyNeuralNetBinaryClassifier(NeuralNetBinaryClassifier):
         return super().fit(X, y=y, **fit_params)
 
 
-def build_nn(input_size=5408, p=0.3, activation=nn.LeakyReLU, monitor="valid_loss"):
+def build_nn(
+    input_size=5408,
+    p=0.3,
+    activation=nn.LeakyReLU,
+    monitor="valid_loss",
+    pos_weight=0.9,
+):
     """Build a simple neural network for binary classification."""
     early_stopping = EarlyStopping(patience=10, monitor=monitor, load_best=True)
     ap = EpochScoring(
@@ -79,7 +85,9 @@ def build_nn(input_size=5408, p=0.3, activation=nn.LeakyReLU, monitor="valid_los
         device="cuda",
         optimizer__weight_decay=5e-2,
         iterator_train__shuffle=True,
-        criterion__pos_weight=torch.tensor([0.9]),
+        # if sampling is used, set pos_weight < 1 (increase Precision), else > 1 (increase Recall)
+        criterion__pos_weight=torch.tensor([pos_weight]),
         callbacks=[early_stopping, ap, recall],
+        verbose=False,
     )
     return clf

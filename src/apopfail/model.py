@@ -43,7 +43,7 @@ def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeli
         Classifier to use in the pipeline.
         If None, the pipeline will not include a classifier.
     scaler : scikit learn transformer, optional
-        If None, use RobustScaler as default.
+        If None, use StandardScaler as default.
     reducer : scikit learn transformer, optional
         If None, use PCA with n_components=0.99
     sampler: imblearn sampler, optional
@@ -72,12 +72,12 @@ def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeli
 
 def build_model():
     """Build the model for the pipeline."""
-    neural_clf = build_nn(input_size=3500)
+    neural_clf = build_nn(input_size=3500, pos_weight=0.8)
     nn_pipe = get_pipeline(
         clf=neural_clf,
         reducer=PCA(n_components=3500),
         # reducer="passthrough",
-        # sampler=SMOTE(random_state=0, sampling_strategy=0.2),
+        sampler=SMOTE(random_state=0, sampling_strategy=0.5),
     )
     xgb = XGBClassifier(
         n_estimators=500,
@@ -91,7 +91,9 @@ def build_model():
         min_child_weight=0.5,
         n_jobs=-1,
     )
-    xgb_pipe = get_pipeline(clf=xgb, sampler=SMOTE(random_state=0))
+    xgb_pipe = get_pipeline(
+        clf=xgb, sampler=SMOTE(random_state=0, sampling_strategy=0.5)
+    )
 
     # return nn_pipe
     return VotingClassifier(

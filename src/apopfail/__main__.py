@@ -91,7 +91,6 @@ def main(log_level, mode, subsample, refit):
         model = build_model()
         logger.info("Evaluating the model...")
         _ = evaluate(model, X_train, y_train, n_folds=5)
-        return
 
         logger.info("Training the model on full dataset...")
         model = train(model, X_train, y_train)
