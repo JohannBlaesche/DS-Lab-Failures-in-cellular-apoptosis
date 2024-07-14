@@ -133,3 +133,7 @@ docs/
 data/
 output/
 catboost_info/
+**/lightning_logs/
+**/checkpoints/
+**/.pt_tmp/
+**/saved_models/

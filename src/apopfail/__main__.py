@@ -8,15 +8,13 @@ from pathlib import Path
 import click
 import numpy as np
 import pandas as pd
-from imblearn.over_sampling import SMOTE
-
-# from torch import float32
+import torch
 from loguru import logger
-from sklearn.svm import SVC
+from sklearn import set_config
 
 from apopfail.compare import compare_occ_models
 from apopfail.evaluate import evaluate
-from apopfail.model import clean, get_pipeline, train
+from apopfail.model import build_model, clean, train
 from apopfail.utils.loading import load_data
 
 DATA_PATH = "./data"
@@ -64,6 +62,8 @@ def main(log_level, mode, subsample, refit):
         "ignore", category=UserWarning, message="X has feature names"
     )
     np.random.seed(0)
+    torch.manual_seed(0)
+    set_config(transform_output="pandas")
     start = time.perf_counter()
     logger.info("Loading the data...")
     X_train, X_test, y_train = load_data(root=".")
@@ -85,24 +85,16 @@ def main(log_level, mode, subsample, refit):
         y_pred = model.predict(X_test)
 
     elif mode == "binary":
-        # set dtype of X_train and y_train to float32 for NeuralNetClassifier
-        X_train = X_train.astype(np.float32)
-        y_train = y_train.astype(np.float32)
+        X_train = X_train.astype("float32")
+        y_train = y_train.astype("float32")
 
-        clf = SVC(
-            # reg_lambda=30, reg_alpha=20, n_estimators=2000, random_state=0
-            C=0.5,
-            class_weight="balanced",
-            random_state=0,
-        )
-        sampler = SMOTE(sampling_strategy="minority", random_state=0)
+        model = build_model()
+        logger.info("Evaluating the model...")
+        _ = evaluate(model, X_train, y_train, n_folds=5)
 
-        model = get_pipeline(clf=clf, sampler=sampler)
         logger.info("Training the model on full dataset...")
         model = train(model, X_train, y_train)
         y_pred = model.predict(X_test)
-        logger.info("Evaluating the model...")
-        _ = evaluate(model, X_train, y_train, n_folds=5)
 
     else:
         raise ValueError("Invalid mode.")

@@ -1,11 +1,16 @@
 """Training step in the pipeline."""
 
+from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline
 from loguru import logger
 from sklearn.decomposition import PCA
+from sklearn.ensemble import VotingClassifier
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import RobustScaler
-from torch import nn
+from sklearn.preprocessing import StandardScaler
+from skorch.helper import DataFrameTransformer
+from xgboost import XGBClassifier
+
+from apopfail.neuralnet import build_nn
 
 
 def train(model, X, y=None):
@@ -38,7 +43,7 @@ def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeli
         Classifier to use in the pipeline.
         If None, the pipeline will not include a classifier.
     scaler : scikit learn transformer, optional
-        If None, use RobustScaler as default.
+        If None, use StandardScaler as default.
     reducer : scikit learn transformer, optional
         If None, use PCA with n_components=0.99
     sampler: imblearn sampler, optional
@@ -49,47 +54,48 @@ def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeli
     pipeline : imblearn.pipeline.Pipeline
         Pipeline to use in the prediction step.
     """
-    # clf = NeuralNetBinaryClassifier(
-    #     ApopfailNeuralNet,
-    #     max_epochs=15,
-    #     lr=0.001,
-    #     optimizer=Adam,
-    #     criterion=nn.BCEWithLogitsLoss,
-    #     device="cuda",
-    #     optimizer__weight_decay=0.001,
-    # )
     steps = [
         ("imputer", SimpleImputer(strategy="mean")),
-        ("scaler", scaler or RobustScaler()),
+        ("scaler", scaler or StandardScaler()),
         ("reducer", reducer or PCA(n_components=0.99)),
     ]
     if sampler is not None:
         steps.append(("sampler", sampler))
 
     if clf is not None:
+        if clf.__class__.__name__.endswith("NeuralNetBinaryClassifier"):
+            steps.append(("flatten", DataFrameTransformer()))
         steps.append(("clf", clf))
 
     return Pipeline(steps=steps)
 
 
-class ApopfailNeuralNet(nn.Module):
-    """Simple Neural Network for binary classification."""
+def build_model():
+    """Build the model for the pipeline."""
+    neural_clf = build_nn(input_size=3500, pos_weight=0.8)
+    nn_pipe = get_pipeline(
+        clf=neural_clf,
+        reducer=PCA(n_components=3500),
+        # reducer="passthrough",
+        sampler=SMOTE(random_state=0, sampling_strategy=0.5),
+    )
+    xgb = XGBClassifier(
+        n_estimators=500,
+        max_depth=8,
+        learning_rate=0.05,
+        reg_lambda=10,
+        reg_alpha=2,
+        random_state=0,
+        subsample=1,
+        colsample_bytree=0.8,
+        min_child_weight=0.5,
+        n_jobs=-1,
+    )
+    xgb_pipe = get_pipeline(
+        clf=xgb, sampler=SMOTE(random_state=0, sampling_strategy=0.5)
+    )
 
-    def __init__(self, nonlin=nn.ReLU()):
-        super().__init__()
-
-        self.dense0 = nn.Linear(900, 256)
-        self.nonlin = nonlin
-        self.dropout = nn.Dropout(0.3)
-        self.dense1 = nn.Linear(256, 128)
-        self.output = nn.Linear(128, 1)
-
-    def forward(self, X, **kwargs):
-        """Forward pass of the neural network."""
-        X = self.nonlin(self.dense0(X))
-        X = self.dropout(X)
-        X = self.nonlin(self.dense1(X))
-        X = self.dropout(X)
-        X = self.output(X)
-        X = nn.Flatten(start_dim=0)(X)
-        return X
+    # return nn_pipe
+    return VotingClassifier(
+        estimators=[("nn", nn_pipe), ("xgb", xgb_pipe)], voting="soft"
+    )
