@@ -55,7 +55,10 @@ def plot_diagnostics(model, X, y, pos_label=1, model_name=None):
         plot_chance_level=True,
     )
     if model_name is None:
-        model_name = f"{model.named_steps['clf'].__class__.__name__}"
+        try:
+            model_name = model.named_steps["clf"].__class__.__name__
+        except:  # noqa: E722
+            model_name = model.__class__.__name__
 
     save_dir = Path("output", "plots")
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -192,7 +195,7 @@ def cross_validate_custom(model, X, y, cv, scoring):
 
         end = time.perf_counter()
         logger.info(
-            f"ROC_AUC in Fold {i+1}: {scores['test_ROC AUC'][i]:.4f} (took {end - start:.2f} seconds)"  # noqa: E501
+            f"AP in Fold {i+1}: {scores['test_Average Precision'][i]:.4f} (took {end - start:.2f} seconds)"  # noqa: E501
         )
 
     return scores

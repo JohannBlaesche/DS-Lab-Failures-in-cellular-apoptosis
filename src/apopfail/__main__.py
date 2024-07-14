@@ -9,15 +9,12 @@ import click
 import numpy as np
 import pandas as pd
 import torch
-from imblearn.over_sampling import SMOTE
-
-# from torch import float32
 from loguru import logger
 from sklearn import set_config
 
 from apopfail.compare import compare_occ_models
 from apopfail.evaluate import evaluate
-from apopfail.model import build_nn, clean, get_pipeline, train
+from apopfail.model import build_model, clean, train
 from apopfail.utils.loading import load_data
 
 DATA_PATH = "./data"
@@ -90,15 +87,15 @@ def main(log_level, mode, subsample, refit):
     elif mode == "binary":
         X_train = X_train.astype("float32")
         y_train = y_train.astype("float32")
-        sampler = SMOTE(sampling_strategy=0.2, random_state=0)
 
-        clf = build_nn()
-        model = get_pipeline(clf=clf, sampler=sampler, reducer="passthrough")
+        model = build_model()
+        logger.info("Evaluating the model...")
+        _ = evaluate(model, X_train, y_train, n_folds=5)
+        return
+
         logger.info("Training the model on full dataset...")
         model = train(model, X_train, y_train)
         y_pred = model.predict(X_test)
-        logger.info("Evaluating the model...")
-        _ = evaluate(model, X_train, y_train, n_folds=5)
 
     else:
         raise ValueError("Invalid mode.")
