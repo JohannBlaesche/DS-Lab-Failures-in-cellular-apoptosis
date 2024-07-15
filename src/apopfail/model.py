@@ -94,8 +94,11 @@ def build_model():
     xgb_pipe = get_pipeline(
         clf=xgb, sampler=SMOTE(random_state=0, sampling_strategy=0.5)
     )
-
     # return nn_pipe
     return VotingClassifier(
-        estimators=[("nn", nn_pipe), ("xgb", xgb_pipe)], voting="soft"
+        estimators=[
+            ("nn", nn_pipe),
+            ("xgb", xgb_pipe),
+        ],
+        voting="soft",
     )
