@@ -6,6 +6,7 @@ from loguru import logger
 from sklearn.decomposition import PCA
 from sklearn.ensemble import VotingClassifier
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from skorch.helper import DataFrameTransformer
 from xgboost import XGBClassifier
@@ -94,11 +95,19 @@ def build_model():
     xgb_pipe = get_pipeline(
         clf=xgb, sampler=SMOTE(random_state=0, sampling_strategy=0.5)
     )
+    logistic = LogisticRegression(
+        penalty="l1",
+        C=0.1,
+        solver="saga",
+        max_iter=1000,
+        random_state=0,
+        n_jobs=-1,
+    )
+    logistic_pipe = get_pipeline(
+        clf=logistic, sampler=SMOTE(random_state=0, sampling_strategy=0.5)
+    )
     # return nn_pipe
     return VotingClassifier(
-        estimators=[
-            ("nn", nn_pipe),
-            ("xgb", xgb_pipe),
-        ],
+        estimators=[("nn", nn_pipe), ("xgb", xgb_pipe), ("logistic", logistic_pipe)],
         voting="soft",
     )
