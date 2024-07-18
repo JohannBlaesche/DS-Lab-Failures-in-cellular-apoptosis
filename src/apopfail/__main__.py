@@ -33,7 +33,7 @@ TARGET = "5408"
     "--mode",
     "-m",
     type=click.Choice(["occ", "binary"], case_sensitive=False),
-    default="binary",
+    default="occ",
     help="Choose the mode of the pipeline. 'occ' for one class classification, 'binary' for binary classification.",  # noqa: E501
 )
 @click.option(

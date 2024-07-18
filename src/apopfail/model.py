@@ -2,10 +2,10 @@
 
 from imblearn.pipeline import Pipeline
 from loguru import logger
-from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import RobustScaler
 from torch import nn
+from umap import UMAP
 
 
 def train(model, X, y=None):
@@ -61,7 +61,7 @@ def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeli
     steps = [
         ("imputer", SimpleImputer(strategy="mean")),
         ("scaler", scaler or RobustScaler()),
-        ("reducer", reducer or PCA(n_components=0.99)),
+        ("reducer", reducer or UMAP(n_components=200)),
     ]
     if sampler is not None:
         steps.append(("sampler", sampler))

@@ -8,11 +8,11 @@ import numpy as np
 from loguru import logger
 from pyod.models.abod import ABOD
 from pyod.models.auto_encoder import AutoEncoder
-from pyod.models.cof import COF
+from pyod.models.feature_bagging import FeatureBagging
 from pyod.models.iforest import IForest
 from pyod.models.lof import LOF
 from pyod.models.ocsvm import OCSVM
-from sklearn.preprocessing import StandardScaler
+from pyod.models.suod import SUOD
 from tqdm import tqdm
 
 from apopfail.model import get_pipeline
@@ -72,9 +72,13 @@ def compare_occ_models(X, y, n_repeats, skip_existing=True):
 
 
 def build_model_dict():
-    """Build a list of models."""
-    iforest = get_pipeline(clf=IForest(random_state=0))
-    abod = get_pipeline(clf=ABOD())
+    """Build a dict of models."""
+    lof_10 = LOF(n_neighbors=10)
+    lof_20 = LOF(n_neighbors=20)
+    lof_30 = LOF(n_neighbors=30)
+    ocsvm = OCSVM()
+    iforest = IForest()
+    abod = ABOD()
     autoencoder = AutoEncoder(
         random_state=0,
         preprocessing=False,
@@ -84,27 +88,22 @@ def build_model_dict():
         hidden_neuron_list=[128, 64],
         dropout_rate=0.1,
     )
-    lof = LOF()
-    cof = COF()
-    ocsvm = OCSVM()
+    lof_estimators = [lof_10, lof_20, lof_30]
+    estimator_set_2 = [autoencoder, iforest, abod]
+    suod_lof = SUOD(base_estimators=lof_estimators)
+    suod_2 = SUOD(base_estimators=estimator_set_2)
 
-    lof_model = get_pipeline(clf=lof)
-    cof_model = get_pipeline(clf=cof)
-    ocsvm_model = get_pipeline(clf=ocsvm)
+    bagging = FeatureBagging(base_estimator=ocsvm)
+    suod_lof_pipe = get_pipeline(clf=suod_lof)
+    suod_2_pipe = get_pipeline(clf=suod_2)
+
+    bagging_pipe = get_pipeline(clf=bagging)
 
     model_dict = {
-        "isolation_forest": iforest,
-        "abod": abod,
-        "autoencoder standard scaling": get_pipeline(
-            clf=autoencoder, scaler=StandardScaler()
-        ),
-        "autoencoder no dimension reduction": get_pipeline(
-            clf=autoencoder, reducer="passthrough"
-        ),
-        "lof": lof_model,
-        "cof": cof_model,
-        "ocsvm": ocsvm_model,
+        "suod_lof": suod_lof_pipe,
+        "bagging_ocsvm": bagging_pipe,
+        "suod_auto_iforest_abod": suod_2_pipe,
     }
     for model in model_dict.values():
-        model.set_params(clf__contamination=0.01)
+        model.set_params(clf__contamination=0.1)
     return model_dict
