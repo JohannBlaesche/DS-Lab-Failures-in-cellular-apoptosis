@@ -9,11 +9,14 @@ from loguru import logger
 from pyod.models.abod import ABOD
 from pyod.models.auto_encoder import AutoEncoder
 from pyod.models.cof import COF
+from pyod.models.deep_svdd import DeepSVDD
 from pyod.models.iforest import IForest
 from pyod.models.lof import LOF
 from pyod.models.ocsvm import OCSVM
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
+from umap import UMAP
 
 from apopfail.model import get_pipeline
 from apopfail.occ import occ
@@ -107,4 +110,21 @@ def build_model_dict():
     }
     for model in model_dict.values():
         model.set_params(clf__contamination=0.01)
+
+    n_features = 5408
+    deep_svdd = DeepSVDD(
+        n_features=n_features,
+        hidden_neurons=[128, 64],
+        contamination=0.01,
+        preprocessing=False,
+        epochs=50,
+        validation_size=0.2,
+        random_state=0,
+    )
+    reducer = PCA(n_components=n_features)
+    reducer = UMAP(n_components=n_features, set_op_mix_ratio=0.25)
+    reducer = "passthrough"
+    deep_svdd_model = get_pipeline(clf=deep_svdd, reducer=reducer)
+    return {"deep_svdd": deep_svdd_model}
+
     return model_dict
