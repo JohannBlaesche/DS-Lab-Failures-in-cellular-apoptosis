@@ -7,8 +7,8 @@ from sklearn.decomposition import PCA
 from sklearn.ensemble import VotingClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
 from skorch.helper import DataFrameTransformer
+from umap import UMAP
 from xgboost import XGBClassifier
 
 from apopfail.neuralnet import build_nn
@@ -57,8 +57,8 @@ def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeli
     """
     steps = [
         ("imputer", SimpleImputer(strategy="mean")),
-        ("scaler", scaler or StandardScaler()),
-        ("reducer", reducer or PCA(n_components=0.99)),
+        # ("scaler", scaler or StandardScaler()),
+        ("reducer", reducer or UMAP(n_components=200)),
     ]
     if sampler is not None:
         steps.append(("sampler", sampler))
