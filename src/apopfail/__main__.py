@@ -63,6 +63,7 @@ def main(log_level, mode, subsample, refit):
     )
     np.random.seed(0)
     torch.manual_seed(0)
+    torch.set_float32_matmul_precision("high")
     set_config(transform_output="pandas")
     start = time.perf_counter()
     logger.info("Loading the data...")
