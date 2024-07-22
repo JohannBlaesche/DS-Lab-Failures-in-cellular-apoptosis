@@ -6,13 +6,8 @@ from pathlib import Path
 
 import numpy as np
 from loguru import logger
-from pyod.models.abod import ABOD
 from pyod.models.auto_encoder import AutoEncoder
-from pyod.models.cof import COF
-from pyod.models.iforest import IForest
-from pyod.models.lof import LOF
-from pyod.models.ocsvm import OCSVM
-from sklearn.preprocessing import StandardScaler
+from pyod.models.deep_svdd import DeepSVDD
 from tqdm import tqdm
 
 from apopfail.model import get_pipeline
@@ -48,6 +43,11 @@ def compare_occ_models(X, y, n_repeats, skip_existing=True):
         with open(model_scores_path, "w") as outfile:
             json.dump(metrics, outfile, indent=4)
 
+        for metric, values in metrics.items():
+            logger.info(
+                f"{model_key} {metric}: {np.mean(values): .4f} (±{np.std(values): .4f})"
+            )
+
         result_dict[model_key] = metrics
 
     target_metric = "Average Precision"
@@ -58,7 +58,7 @@ def compare_occ_models(X, y, n_repeats, skip_existing=True):
         model_results = metrics[target_metric]
         result_mean = np.mean(model_results)
         result_std = np.std(model_results)
-        logger.info(f"{model_key}: {result_mean: .4f}(±{result_std: .4f})")
+        logger.info(f"{model_key}: {result_mean: .4f} (±{result_std: .4f})")
         if result_mean > best_model_score:
             best_model_score = result_mean
             best_model_key = model_key
@@ -73,38 +73,40 @@ def compare_occ_models(X, y, n_repeats, skip_existing=True):
 
 def build_model_dict():
     """Build a list of models."""
-    iforest = get_pipeline(clf=IForest(random_state=0))
-    abod = get_pipeline(clf=ABOD())
     autoencoder = AutoEncoder(
         random_state=0,
         preprocessing=False,
-        batch_size=64,
-        epoch_num=25,
+        batch_size=256,
+        epoch_num=50,
         verbose=0,
         hidden_neuron_list=[128, 64],
-        dropout_rate=0.1,
+        dropout_rate=0.2,
+        device="cuda",
+        use_compile=True,
+        hidden_activation_name="leaky_relu",
     )
-    lof = LOF()
-    cof = COF()
-    ocsvm = OCSVM()
 
-    lof_model = get_pipeline(clf=lof)
-    cof_model = get_pipeline(clf=cof)
-    ocsvm_model = get_pipeline(clf=ocsvm)
+    n_features = 5408
+    deep_svdd = DeepSVDD(
+        n_features=n_features,
+        hidden_neurons=[128, 64, 32],
+        hidden_activation="leaky_relu",
+        contamination=0.2,
+        batch_size=32,
+        preprocessing=False,
+        epochs=50,
+        validation_size=0.2,
+        random_state=0,
+    )
+    reducer = "passthrough"
+    deep_svdd_model = get_pipeline(clf=deep_svdd, reducer=reducer)  # noqa: F841
 
     model_dict = {
-        "isolation_forest": iforest,
-        "abod": abod,
-        "autoencoder standard scaling": get_pipeline(
-            clf=autoencoder, scaler=StandardScaler()
-        ),
+        # "deep_svdd": deep_svdd_model,
         "autoencoder no dimension reduction": get_pipeline(
             clf=autoencoder, reducer="passthrough"
         ),
-        "lof": lof_model,
-        "cof": cof_model,
-        "ocsvm": ocsvm_model,
     }
     for model in model_dict.values():
-        model.set_params(clf__contamination=0.01)
+        model.set_params(clf__contamination=0.3)
     return model_dict

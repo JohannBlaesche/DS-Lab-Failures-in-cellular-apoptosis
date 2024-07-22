@@ -63,6 +63,7 @@ def main(log_level, mode, subsample, refit):
     )
     np.random.seed(0)
     torch.manual_seed(0)
+    torch.set_float32_matmul_precision("high")
     set_config(transform_output="pandas")
     start = time.perf_counter()
     logger.info("Loading the data...")
@@ -81,7 +82,7 @@ def main(log_level, mode, subsample, refit):
 
         model, _ = occ(model, X_train, y_train, refit=refit)
         """
-        model = compare_occ_models(X_train, y_train, n_repeats=3, skip_existing=True)
+        model = compare_occ_models(X_train, y_train, n_repeats=3, skip_existing=False)
         y_pred = model.predict(X_test)
 
     elif mode == "binary":
