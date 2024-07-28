@@ -73,12 +73,12 @@ def get_pipeline(*, clf=None, scaler=None, reducer=None, sampler=None) -> Pipeli
 
 def build_model():
     """Build the model for the pipeline."""
-    neural_clf = build_nn(input_size=3500, pos_weight=0.8)
+    neural_clf = build_nn(input_size=3000, pos_weight=1.3)
     nn_pipe = get_pipeline(
         clf=neural_clf,
-        reducer=PCA(n_components=3500),
+        reducer=PCA(n_components=3000),
         # reducer="passthrough",
-        sampler=SMOTE(random_state=0, sampling_strategy=0.5),
+        sampler=SMOTE(random_state=0, sampling_strategy=0.2),
     )
     xgb = XGBClassifier(
         n_estimators=500,
@@ -92,7 +92,7 @@ def build_model():
         min_child_weight=0.5,
         n_jobs=-1,
     )
-    xgb_pipe = get_pipeline(
+    xgb_pipe = get_pipeline(  # noqa: F841
         clf=xgb, sampler=SMOTE(random_state=0, sampling_strategy=0.5)
     )
     logistic = LogisticRegression(
@@ -103,11 +103,13 @@ def build_model():
         random_state=0,
         n_jobs=-1,
     )
-    logistic_pipe = get_pipeline(
+    logistic_pipe = get_pipeline(  # noqa: F841
         clf=logistic, sampler=SMOTE(random_state=0, sampling_strategy=0.5)
     )
     # return nn_pipe
     return VotingClassifier(
-        estimators=[("nn", nn_pipe), ("xgb", xgb_pipe), ("logistic", logistic_pipe)],
+        estimators=[
+            ("nn", nn_pipe)
+        ],  # , ("xgb", xgb_pipe), ("logistic", logistic_pipe)],
         voting="soft",
     )
