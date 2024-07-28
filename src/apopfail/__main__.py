@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import torch
 from loguru import logger
-from sklearn import set_config
 
 from apopfail.compare import compare_occ_models
 from apopfail.evaluate import evaluate
@@ -31,7 +30,7 @@ TARGET = "5408"
     "--mode",
     "-m",
     type=click.Choice(["occ", "binary"], case_sensitive=False),
-    default="binary",
+    default="occ",
     help="Choose the mode of the pipeline. 'occ' for one class classification, 'binary' for binary classification.",  # noqa: E501
 )
 @click.option(
@@ -64,7 +63,6 @@ def main(log_level, mode, subsample, refit):
     np.random.seed(0)
     torch.manual_seed(0)
     torch.set_float32_matmul_precision("high")
-    set_config(transform_output="pandas")
     start = time.perf_counter()
     logger.info("Loading the data...")
     X_train, X_test, y_train = load_data(root=".")

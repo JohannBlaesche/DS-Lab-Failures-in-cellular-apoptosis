@@ -7,6 +7,12 @@ from pathlib import Path
 import numpy as np
 from loguru import logger
 from pyod.models.auto_encoder import AutoEncoder
+from pyod.models.cof import COF
+from pyod.models.iforest import IForest
+from pyod.models.lof import LOF
+from pyod.models.lunar import LUNAR
+from pyod.models.ocsvm import OCSVM
+from sklearn.preprocessing import StandardScaler
 from pyod.models.deep_svdd import DeepSVDD
 from tqdm import tqdm
 
@@ -85,6 +91,15 @@ def build_model_dict():
         use_compile=True,
         hidden_activation_name="leaky_relu",
     )
+    lof = LOF()
+    cof = COF()
+    ocsvm = OCSVM()
+    lunar = LUNAR(n_neighbours=1)
+
+    lof_model = get_pipeline(clf=lof)
+    cof_model = get_pipeline(clf=cof)
+    ocsvm_model = get_pipeline(clf=ocsvm)
+    lunar_model = get_pipeline(clf=lunar)
 
     n_features = 5408
     deep_svdd = DeepSVDD(
@@ -106,6 +121,10 @@ def build_model_dict():
         "autoencoder no dimension reduction": get_pipeline(
             clf=autoencoder, reducer="passthrough"
         ),
+        "lof": lof_model,
+        "cof": cof_model,
+        "ocsvm": ocsvm_model,
+        "lunar": lunar_model,
     }
     for model in model_dict.values():
         model.set_params(clf__contamination=0.3)
